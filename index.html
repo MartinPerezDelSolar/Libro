@@ -2,8 +2,11 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-
+  <!-- Meta para evitar modo lectura en Safari y otros -->
+  <meta name="readability-verification" content="none" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Lector Ágil</title>
   <style>
     /* Reset y variables */
     * {
@@ -25,410 +28,400 @@
       --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
+    /* FORZAR estilos para que el modo lectura no los anule */
     body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Georgia', serif;
-      display: flex;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
+      background: var(--bg) !important;
+      color: var(--text) !important;
+      font-family: 'Georgia', serif !important;
+      display: flex !important;
+      justify-content: center !important;
+      min-height: 100vh !important;
+      margin: 0 !important;
       transition: background var(--transition), color var(--transition);
     }
 
     body.sepia {
-      --bg: #f6edd8;
-      --text: #3d352a;
-      --bar-bg: rgba(246, 237, 216, 0.92);
-      --border: rgba(61, 53, 42, 0.08);
+      --bg: #f6edd8 !important;
+      --text: #3d352a !important;
+      --bar-bg: rgba(246, 237, 216, 0.92) !important;
+      --border: rgba(61, 53, 42, 0.08) !important;
     }
 
     body.dark {
-      --bg: #18181c;
-      --text: #d6d2cb;
-      --bar-bg: rgba(24, 24, 28, 0.92);
-      --border: rgba(255,255,255,0.06);
-      --accent: #c9a96e;
-      --accent-light: rgba(201, 169, 110, 0.15);
+      --bg: #18181c !important;
+      --text: #d6d2cb !important;
+      --bar-bg: rgba(24, 24, 28, 0.92) !important;
+      --border: rgba(255,255,255,0.06) !important;
+      --accent: #c9a96e !important;
+      --accent-light: rgba(201, 169, 110, 0.15) !important;
     }
 
     #app {
-      width: 100%;
-      max-width: 700px;
-      height: 100vh;
-      height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      background: var(--bg);
+      width: 100% !important;
+      max-width: 700px !important;
+      height: 100vh !important;
+      height: 100dvh !important;
+      display: flex !important;
+      flex-direction: column !important;
+      background: var(--bg) !important;
       transition: background var(--transition);
-      position: relative;
-      overflow: hidden;
+      position: relative !important;
+      overflow: hidden !important;
       box-shadow: 0 0 40px rgba(0,0,0,0.04);
     }
 
     /* Área de lectura */
     #reader {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px 24px 24px 24px;
-      scroll-behavior: smooth;
-      -webkit-overflow-scrolling: touch;
-      background: var(--bg);
+      flex: 1 !important;
+      overflow-y: auto !important;
+      padding: 20px 24px 24px 24px !important;
+      scroll-behavior: smooth !important;
+      -webkit-overflow-scrolling: touch !important;
+      background: var(--bg) !important;
       transition: background var(--transition);
-      line-height: 1.8;
-      letter-spacing: 0.01em;
-      word-break: break-word;
+      line-height: 1.8 !important;
+      letter-spacing: 0.01em !important;
+      word-break: break-word !important;
+      font-family: 'Georgia', serif !important;
     }
 
     #reader p {
-      margin: 0 0 1.4em 0;
-      text-align: justify;
-      font-size: 1rem;
+      margin: 0 0 1.4em 0 !important;
+      text-align: justify !important;
+      font-size: 1rem !important;
       transition: font-size 0.25s ease;
     }
 
-    /* Barra superior (con menú y título) */
+    /* Barra superior (solo menú) - FORZADA visible */
     #top-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 16px;
-      background: var(--bar-bg);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
+      display: flex !important;
+      align-items: center !important;
+      padding: 10px 16px !important;
+      background: var(--bar-bg) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+      border-bottom: 1px solid var(--border) !important;
       transition: background var(--transition), transform var(--transition), opacity var(--transition);
-      z-index: 20;
-      flex-shrink: 0;
+      z-index: 20 !important;
+      flex-shrink: 0 !important;
+      min-height: 56px !important;
     }
 
     #top-bar.hidden {
-      transform: translateY(-100%);
-      opacity: 0;
-      pointer-events: none;
+      transform: translateY(-100%) !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
     }
 
     .menu-btn {
-      background: none;
-      border: none;
-      color: var(--text);
-      font-size: 1.6rem;
-      padding: 4px 8px;
-      cursor: pointer;
-      border-radius: 8px;
+      background: none !important;
+      border: none !important;
+      color: var(--text) !important;
+      font-size: 1.8rem !important;
+      padding: 4px 8px !important;
+      cursor: pointer !important;
+      border-radius: 8px !important;
       transition: background 0.2s;
-      line-height: 1;
+      line-height: 1 !important;
+      display: inline-block !important;
     }
     .menu-btn:hover {
-      background: var(--accent-light);
+      background: var(--accent-light) !important;
     }
 
-    .title {
-      font-size: 0.85rem;
-      opacity: 0.6;
-      letter-spacing: 0.04em;
-      font-weight: 400;
-    }
-
-    /* Barra inferior de progreso */
+    /* Barra inferior de progreso - FORZADA visible */
     #bottom-bar {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 8px 16px;
-      background: var(--bar-bg);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-top: 1px solid var(--border);
+      display: flex !important;
+      align-items: center !important;
+      gap: 14px !important;
+      padding: 8px 16px !important;
+      background: var(--bar-bg) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+      border-top: 1px solid var(--border) !important;
       transition: background var(--transition), transform var(--transition), opacity var(--transition);
-      flex-shrink: 0;
-      z-index: 20;
+      flex-shrink: 0 !important;
+      z-index: 20 !important;
+      min-height: 48px !important;
     }
 
     #bottom-bar.hidden {
-      transform: translateY(100%);
-      opacity: 0;
-      pointer-events: none;
+      transform: translateY(100%) !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
     }
 
     .progress-track {
-      flex: 1;
-      height: 3px;
-      background: var(--border);
-      border-radius: 4px;
-      position: relative;
-      overflow: visible;
+      flex: 1 !important;
+      height: 3px !important;
+      background: var(--border) !important;
+      border-radius: 4px !important;
+      position: relative !important;
+      overflow: visible !important;
     }
 
     .progress-fill {
-      height: 100%;
-      width: 0%;
-      background: var(--accent);
-      border-radius: 4px;
+      height: 100% !important;
+      width: 0% !important;
+      background: var(--accent) !important;
+      border-radius: 4px !important;
       transition: width 0.15s ease;
     }
 
     .bookmark-dot {
-      position: absolute;
-      top: -4px;
-      width: 10px;
-      height: 10px;
-      background: var(--accent);
-      border-radius: 50%;
-      box-shadow: 0 0 12px rgba(184, 149, 106, 0.4);
-      opacity: 0;
-      transform: scale(0.6);
-      transition: opacity 0.3s, transform 0.3s;
-      pointer-events: none;
+      position: absolute !important;
+      top: -4px !important;
+      width: 10px !important;
+      height: 10px !important;
+      background: var(--accent) !important;
+      border-radius: 50% !important;
+      box-shadow: 0 0 12px rgba(184, 149, 106, 0.4) !important;
+      opacity: 0 !important;
+      transform: scale(0.6) !important;
+      transition: opacity 0.3s, transform 0.3s !important;
+      pointer-events: none !important;
     }
     .bookmark-dot.visible {
-      opacity: 1;
-      transform: scale(1);
+      opacity: 1 !important;
+      transform: scale(1) !important;
     }
 
     .page-info {
-      font-size: 0.7rem;
-      opacity: 0.6;
-      letter-spacing: 0.03em;
-      white-space: nowrap;
-      font-variant-numeric: tabular-nums;
-      min-width: 60px;
-      text-align: right;
+      font-size: 0.7rem !important;
+      opacity: 0.6 !important;
+      letter-spacing: 0.03em !important;
+      white-space: nowrap !important;
+      font-variant-numeric: tabular-nums !important;
+      min-width: 60px !important;
+      text-align: right !important;
     }
 
     /* Panel lateral (menú) */
     .menu-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.3);
-      backdrop-filter: blur(3px);
-      -webkit-backdrop-filter: blur(3px);
-      z-index: 100;
-      opacity: 0;
-      pointer-events: none;
+      position: fixed !important;
+      inset: 0 !important;
+      background: rgba(0,0,0,0.3) !important;
+      backdrop-filter: blur(3px) !important;
+      -webkit-backdrop-filter: blur(3px) !important;
+      z-index: 100 !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
       transition: opacity var(--transition);
     }
     .menu-overlay.open {
-      opacity: 1;
-      pointer-events: auto;
+      opacity: 1 !important;
+      pointer-events: auto !important;
     }
 
     .menu-panel {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 300px;
-      max-width: 80vw;
-      height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      box-shadow: 4px 0 30px rgba(0,0,0,0.15);
-      transform: translateX(-100%);
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 300px !important;
+      max-width: 80vw !important;
+      height: 100% !important;
+      background: var(--bg) !important;
+      color: var(--text) !important;
+      box-shadow: 4px 0 30px rgba(0,0,0,0.15) !important;
+      transform: translateX(-100%) !important;
       transition: transform var(--transition), background var(--transition);
-      z-index: 101;
-      padding: 24px 20px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
+      z-index: 101 !important;
+      padding: 24px 20px !important;
+      overflow-y: auto !important;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 24px !important;
     }
     .menu-panel.open {
-      transform: translateX(0);
+      transform: translateX(0) !important;
     }
 
+    /* ... (resto de estilos del menú y temas igual que antes, pero con !important en lo crítico) */
+    /* Por brevedad, mantengo las mismas reglas que en la versión anterior, 
+       pero añadiendo !important donde sea necesario para resistir al modo lectura */
     .menu-panel h2 {
-      font-size: 1.1rem;
-      font-weight: 500;
-      letter-spacing: 0.05em;
-      opacity: 0.7;
-      margin: 0 0 4px 0;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 12px;
+      font-size: 1.1rem !important;
+      font-weight: 500 !important;
+      letter-spacing: 0.05em !important;
+      opacity: 0.7 !important;
+      margin: 0 0 4px 0 !important;
+      border-bottom: 1px solid var(--border) !important;
+      padding-bottom: 12px !important;
     }
-
+    /* ... el resto de estilos del menú ya estaban bien, los dejaré igual */
+    /* (copio el resto para no repetir) */
     .menu-section {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 10px !important;
     }
-
     .menu-section label {
-      font-size: 0.8rem;
-      opacity: 0.6;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
+      font-size: 0.8rem !important;
+      opacity: 0.6 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.06em !important;
     }
-
     .font-size-control {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      display: flex !important;
+      align-items: center !important;
+      gap: 12px !important;
     }
     .font-size-control button {
-      background: var(--border);
-      border: none;
-      color: var(--text);
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      font-size: 1.2rem;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background: var(--border) !important;
+      border: none !important;
+      color: var(--text) !important;
+      width: 36px !important;
+      height: 36px !important;
+      border-radius: 50% !important;
+      font-size: 1.2rem !important;
+      cursor: pointer !important;
+      transition: background 0.2s, transform 0.1s !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
     }
     .font-size-control button:active {
-      transform: scale(0.92);
+      transform: scale(0.92) !important;
     }
     .font-size-control span {
-      min-width: 40px;
-      text-align: center;
-      font-size: 0.9rem;
+      min-width: 40px !important;
+      text-align: center !important;
+      font-size: 0.9rem !important;
     }
-
     .font-family-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
+      display: flex !important;
+      flex-wrap: wrap !important;
+      gap: 6px !important;
     }
     .font-family-group button {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      flex: 1 0 auto;
+      background: transparent !important;
+      border: 1px solid var(--border) !important;
+      color: var(--text) !important;
+      padding: 6px 14px !important;
+      border-radius: 20px !important;
+      font-size: 0.8rem !important;
+      cursor: pointer !important;
+      transition: all 0.2s !important;
+      flex: 1 0 auto !important;
     }
     .font-family-group button.active {
-      border-color: var(--accent);
-      background: var(--accent-light);
-      color: var(--accent);
+      border-color: var(--accent) !important;
+      background: var(--accent-light) !important;
+      color: var(--accent) !important;
     }
-
     .theme-group {
-      display: flex;
-      gap: 8px;
+      display: flex !important;
+      gap: 8px !important;
     }
     .theme-group button {
-      flex: 1;
-      padding: 8px 0;
-      border: 2px solid var(--border);
-      border-radius: 8px;
-      background: transparent;
-      color: var(--text);
-      font-size: 0.8rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-align: center;
+      flex: 1 !important;
+      padding: 8px 0 !important;
+      border: 2px solid var(--border) !important;
+      border-radius: 8px !important;
+      background: transparent !important;
+      color: var(--text) !important;
+      font-size: 0.8rem !important;
+      cursor: pointer !important;
+      transition: all 0.2s !important;
+      text-align: center !important;
     }
     .theme-group button.active {
-      border-color: var(--accent);
-      background: var(--accent-light);
+      border-color: var(--accent) !important;
+      background: var(--accent-light) !important;
     }
     .theme-group button .preview {
-      display: block;
-      height: 18px;
-      border-radius: 4px;
-      margin: 4px auto 2px;
-      width: 60%;
+      display: block !important;
+      height: 18px !important;
+      border-radius: 4px !important;
+      margin: 4px auto 2px !important;
+      width: 60% !important;
     }
     .theme-group button[data-theme="light"] .preview { background: #f7f3ee; border:1px solid #ddd; }
     .theme-group button[data-theme="sepia"] .preview { background: #f6edd8; border:1px solid #d4c9b0; }
     .theme-group button[data-theme="dark"] .preview { background: #18181c; border:1px solid #444; }
-
     .bookmark-actions {
-      display: flex;
-      gap: 10px;
+      display: flex !important;
+      gap: 10px !important;
     }
     .bookmark-actions button {
-      flex: 1;
-      padding: 10px 0;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: transparent;
-      color: var(--text);
-      font-size: 0.85rem;
-      cursor: pointer;
-      transition: all 0.2s;
+      flex: 1 !important;
+      padding: 10px 0 !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 8px !important;
+      background: transparent !important;
+      color: var(--text) !important;
+      font-size: 0.85rem !important;
+      cursor: pointer !important;
+      transition: all 0.2s !important;
     }
     .bookmark-actions button:active {
-      transform: scale(0.96);
+      transform: scale(0.96) !important;
     }
     .bookmark-actions .save-bookmark {
-      border-color: var(--accent);
-      background: var(--accent-light);
-      color: var(--accent);
+      border-color: var(--accent) !important;
+      background: var(--accent-light) !important;
+      color: var(--accent) !important;
     }
-
     .close-menu {
-      margin-top: auto;
-      padding: 12px;
-      border: none;
-      background: var(--border);
-      color: var(--text);
-      border-radius: 8px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: background 0.2s;
+      margin-top: auto !important;
+      padding: 12px !important;
+      border: none !important;
+      background: var(--border) !important;
+      color: var(--text) !important;
+      border-radius: 8px !important;
+      font-size: 0.9rem !important;
+      cursor: pointer !important;
+      transition: background 0.2s !important;
     }
     .close-menu:active {
-      background: var(--accent-light);
+      background: var(--accent-light) !important;
     }
 
-    /* Toast (notificaciones) */
+    /* Toast */
     .toast {
-      position: fixed;
-      bottom: 80px;
-      left: 50%;
-      transform: translateX(-50%) translateY(20px);
-      background: rgba(0,0,0,0.78);
-      color: #fff;
-      padding: 10px 24px;
-      border-radius: 30px;
-      font-size: 0.9rem;
-      opacity: 0;
-      pointer-events: none;
-      transition: all 0.3s ease;
-      z-index: 200;
-      backdrop-filter: blur(4px);
+      position: fixed !important;
+      bottom: 80px !important;
+      left: 50% !important;
+      transform: translateX(-50%) translateY(20px) !important;
+      background: rgba(0,0,0,0.78) !important;
+      color: #fff !important;
+      padding: 10px 24px !important;
+      border-radius: 30px !important;
+      font-size: 0.9rem !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      transition: all 0.3s ease !important;
+      z-index: 200 !important;
+      backdrop-filter: blur(4px) !important;
     }
     .toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
+      opacity: 1 !important;
+      transform: translateX(-50%) translateY(0) !important;
     }
 
-    /* Scrollbar personalizada */
     #reader::-webkit-scrollbar {
-      width: 4px;
+      width: 4px !important;
     }
     #reader::-webkit-scrollbar-track {
-      background: transparent;
+      background: transparent !important;
     }
     #reader::-webkit-scrollbar-thumb {
-      background: var(--accent);
-      border-radius: 8px;
+      background: var(--accent) !important;
+      border-radius: 8px !important;
     }
 
-    /* Responsive */
     @media (max-width: 480px) {
-      #reader { padding: 16px 18px; }
-      .menu-panel { width: 260px; padding: 20px 16px; }
-      .font-family-group button { font-size: 0.7rem; padding: 4px 10px; }
-      .title { font-size: 0.7rem; }
+      #reader { padding: 16px 18px !important; }
+      .menu-panel { width: 260px !important; padding: 20px 16px !important; }
+      .font-family-group button { font-size: 0.7rem !important; padding: 4px 10px !important; }
     }
   </style>
 </head>
 <body>
   <div id="app">
-    <!-- Barra superior -->
+    <!-- Barra superior: solo menú -->
     <header id="top-bar">
       <button class="menu-btn" id="menuToggle" aria-label="Menú">☰</button>
-      <span class="title">Lector Ágil</span>
-      <span style="width:40px;"></span> <!-- spacer -->
     </header>
 
     <!-- Área de lectura -->
@@ -461,11 +454,11 @@
     <div class="menu-section">
       <label>Tipo de fuente</label>
       <div class="font-family-group" id="fontFamilyGroup">
-        <button data-font="Georgia, serif">Georgia</button>
-        <button data-font="'Times New Roman', serif">Times</button>
-        <button data-font="Arial, sans-serif">Arial</button>
-        <button data-font="Verdana, sans-serif">Verdana</button>
-        <button data-font="'Palatino Linotype', 'Book Antiqua', serif">Palatino</button>
+        <button data-font="georgia">Georgia</button>
+        <button data-font="times">Times New Roman</button>
+        <button data-font="arial">Arial</button>
+        <button data-font="verdana">Verdana</button>
+        <button data-font="palatino">Palatino</button>
       </div>
     </div>
 
@@ -496,19 +489,28 @@
     (function() {
       'use strict';
 
-      // ---------- DOM refs ----------
+      console.log('📖 Lector Ágil v2.2 - Anti-modo lectura');
+
+      // Mapeo de fuentes
+      const FONT_MAP = {
+        georgia: 'Georgia, serif',
+        times: '"Times New Roman", serif',
+        arial: 'Arial, sans-serif',
+        verdana: 'Verdana, sans-serif',
+        palatino: '"Palatino Linotype", "Book Antiqua", serif'
+      };
+
+      // DOM refs
       const reader = document.getElementById('reader');
       const topBar = document.getElementById('top-bar');
       const bottomBar = document.getElementById('bottom-bar');
       const progressFill = document.getElementById('progressFill');
       const pageInfo = document.getElementById('pageInfo');
       const bookmarkDot = document.getElementById('bookmarkDot');
-
       const menuToggle = document.getElementById('menuToggle');
       const menuOverlay = document.getElementById('menuOverlay');
       const menuPanel = document.getElementById('menuPanel');
       const closeMenu = document.getElementById('closeMenu');
-
       const fontDec = document.getElementById('fontDec');
       const fontInc = document.getElementById('fontInc');
       const fontSizeDisplay = document.getElementById('fontSizeDisplay');
@@ -518,33 +520,32 @@
       const goToBookmarkBtn = document.getElementById('goToBookmark');
       const toast = document.getElementById('toast');
 
-      // ---------- Estado ----------
+      // Estado
       const state = {
-        fontSize: 1.0,          // en rem
-        fontFamily: 'Georgia, serif',
-        theme: 'light',         // 'light' | 'sepia' | 'dark'
-        bookmark: null,         // porcentaje (0-1) o null
-        scrollPercent: 0,       // última posición guardada (0-1)
+        fontSize: 1.0,
+        fontKey: 'georgia',
+        theme: 'light',
+        bookmark: null,
+        scrollPercent: 0,
         totalPages: 1,
         currentPage: 1,
         menuOpen: false,
         barsVisible: true,
       };
 
-      // Constantes
       const MIN_FONT = 0.7;
       const MAX_FONT = 2.0;
       const FONT_STEP = 0.08;
       const STORAGE_KEY = 'lector_agile_config';
 
-      // ---------- Persistencia ----------
+      // Persistencia
       function loadState() {
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
           if (!raw) return false;
           const saved = JSON.parse(raw);
           if (saved.fontSize) state.fontSize = Math.min(MAX_FONT, Math.max(MIN_FONT, saved.fontSize));
-          if (saved.fontFamily) state.fontFamily = saved.fontFamily;
+          if (saved.fontKey && FONT_MAP[saved.fontKey]) state.fontKey = saved.fontKey;
           if (saved.theme) state.theme = saved.theme;
           if (saved.bookmark !== undefined) state.bookmark = saved.bookmark;
           if (saved.scrollPercent !== undefined) state.scrollPercent = saved.scrollPercent;
@@ -555,7 +556,7 @@
       function saveState() {
         const data = {
           fontSize: state.fontSize,
-          fontFamily: state.fontFamily,
+          fontKey: state.fontKey,
           theme: state.theme,
           bookmark: state.bookmark,
           scrollPercent: state.scrollPercent,
@@ -563,39 +564,41 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       }
 
-      // ---------- Temas ----------
+      // Temas
       function applyTheme(theme) {
         document.body.className = theme === 'light' ? '' : theme;
         state.theme = theme;
-        // Resaltar botón activo en el menú
         document.querySelectorAll('#themeGroup button').forEach(btn => {
           btn.classList.toggle('active', btn.dataset.theme === theme);
         });
         saveState();
       }
 
-      // ---------- Fuentes y tamaño ----------
+      // Fuentes y tamaño
       function applyFontSize(size) {
         state.fontSize = Math.min(MAX_FONT, Math.max(MIN_FONT, size));
         reader.style.fontSize = state.fontSize + 'rem';
         fontSizeDisplay.textContent = state.fontSize.toFixed(1);
         saveState();
-        // Recalcular páginas después de cambio de tamaño
         requestAnimationFrame(() => updateProgress());
       }
 
-      function applyFontFamily(family) {
-        state.fontFamily = family;
+      function applyFontFamily(key) {
+        if (!FONT_MAP[key]) return;
+        state.fontKey = key;
+        const family = FONT_MAP[key];
         reader.style.fontFamily = family;
+        void reader.offsetHeight;
         document.querySelectorAll('#fontFamilyGroup button').forEach(btn => {
-          btn.classList.toggle('active', btn.dataset.font === family);
+          btn.classList.toggle('active', btn.dataset.font === key);
         });
         saveState();
-        // Recalcular
+        showToast(`Fuente: ${key.charAt(0).toUpperCase() + key.slice(1)}`);
         requestAnimationFrame(() => updateProgress());
+        console.log(`🔤 Fuente: ${family}`);
       }
 
-      // ---------- Progreso y páginas ----------
+      // Progreso
       function updateProgress() {
         const scrollTop = reader.scrollTop;
         const scrollHeight = reader.scrollHeight;
@@ -617,7 +620,6 @@
         state.currentPage = Math.min(state.totalPages, Math.floor(scrollTop / clientHeight) + 1);
         pageInfo.textContent = `Pág. ${state.currentPage} de ${state.totalPages}`;
 
-        // Actualizar posición del punto de marcador
         if (state.bookmark !== null) {
           const bmPercent = Math.min(1, Math.max(0, state.bookmark));
           bookmarkDot.style.left = `calc(${bmPercent * 100}% - 4px)`;
@@ -626,12 +628,10 @@
           bookmarkDot.classList.remove('visible');
         }
 
-        // Guardar porcentaje de scroll (con throttle)
         state.scrollPercent = percent;
         saveState();
       }
 
-      // Throttle para el scroll
       let scrollSaveTimer = null;
       function handleScroll() {
         updateProgress();
@@ -642,18 +642,16 @@
         }, 400);
       }
 
-      // ---------- Restaurar posición (por porcentaje) ----------
       function restoreScrollPosition() {
         if (state.scrollPercent !== undefined && state.scrollPercent > 0) {
           const maxScroll = reader.scrollHeight - reader.clientHeight;
           const target = state.scrollPercent * maxScroll;
           reader.scrollTop = target;
         }
-        // Restaurar marcador visual
         updateProgress();
       }
 
-      // ---------- Marcador ----------
+      // Marcador
       function saveBookmark() {
         const scrollTop = reader.scrollTop;
         const scrollHeight = reader.scrollHeight;
@@ -680,11 +678,13 @@
         showToast('📍 Yendo al marcador');
       }
 
-      // ---------- Cargar libro ----------
+      // Cargar libro
       async function loadBook() {
         try {
-          const resp = await fetch('libro.txt');
-          if (!resp.ok) throw new Error('No se pudo cargar el libro');
+          const url = 'libro.txt?t=' + Date.now();
+          console.log('📂 Cargando:', url);
+          const resp = await fetch(url);
+          if (!resp.ok) throw new Error('Error ' + resp.status);
           const text = await resp.text();
           const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim() !== '');
           if (paragraphs.length === 0) {
@@ -694,23 +694,19 @@
           const html = paragraphs.map(p => `<p>${escapeHtml(p.trim())}</p>`).join('');
           reader.innerHTML = html;
 
-          // Aplicar estilos guardados
           applyFontSize(state.fontSize);
-          applyFontFamily(state.fontFamily);
+          applyFontFamily(state.fontKey);
           applyTheme(state.theme);
 
-          // Esperar a que el contenido se renderice y luego restaurar posición
           requestAnimationFrame(() => {
-            // Forzar reflow
             void reader.offsetHeight;
             restoreScrollPosition();
           });
 
-          // Guardar estado inicial
           saveState();
         } catch (err) {
           reader.innerHTML = `<p style="color: #b44;"><strong>Error:</strong> ${err.message}</p>`;
-          console.error(err);
+          console.error('❌ Error:', err);
         }
       }
 
@@ -720,7 +716,7 @@
         return div.innerHTML;
       }
 
-      // ---------- Menú ----------
+      // Menú
       function toggleMenu(open) {
         state.menuOpen = (open !== undefined) ? open : !state.menuOpen;
         menuPanel.classList.toggle('open', state.menuOpen);
@@ -728,7 +724,7 @@
         document.body.style.overflow = state.menuOpen ? 'hidden' : '';
       }
 
-      // ---------- Toast ----------
+      // Toast
       let toastTimer = null;
       function showToast(msg, duration = 2000) {
         if (toastTimer) {
@@ -743,24 +739,17 @@
         }, duration);
       }
 
-      // ---------- Ocultar/mostrar barras (toque en el centro) ----------
+      // Ocultar/mostrar barras
       function toggleBars() {
         state.barsVisible = !state.barsVisible;
         topBar.classList.toggle('hidden', !state.barsVisible);
         bottomBar.classList.toggle('hidden', !state.barsVisible);
       }
 
-      // ---------- Eventos ----------
-      // Scroll
+      // Eventos
       reader.addEventListener('scroll', handleScroll, { passive: true });
+      reader.addEventListener('click', toggleBars);
 
-      // Toque en el área de lectura para ocultar barras (solo si no hay selección de texto)
-      reader.addEventListener('click', (e) => {
-        // Ignorar si se hizo clic en un enlace o elemento interactivo (no hay)
-        toggleBars();
-      });
-
-      // Menú
       menuToggle.addEventListener('click', (e) => {
         e.stopPropagation();
         toggleMenu();
@@ -768,62 +757,56 @@
       menuOverlay.addEventListener('click', () => toggleMenu(false));
       closeMenu.addEventListener('click', () => toggleMenu(false));
 
-      // Tamaño de fuente
       fontDec.addEventListener('click', () => applyFontSize(state.fontSize - FONT_STEP));
       fontInc.addEventListener('click', () => applyFontSize(state.fontSize + FONT_STEP));
 
-      // Fuentes
       fontFamilyGroup.addEventListener('click', (e) => {
         const btn = e.target.closest('button');
         if (!btn) return;
-        applyFontFamily(btn.dataset.font);
+        const key = btn.dataset.font;
+        if (key && FONT_MAP[key]) applyFontFamily(key);
       });
 
-      // Temas
       themeGroup.addEventListener('click', (e) => {
         const btn = e.target.closest('button');
         if (!btn) return;
         applyTheme(btn.dataset.theme);
       });
 
-      // Marcador
       saveBookmarkBtn.addEventListener('click', saveBookmark);
       goToBookmarkBtn.addEventListener('click', goToBookmark);
 
-      // Recalcular al cambiar orientación
       let resizeTimer;
       window.addEventListener('resize', () => {
         clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-          updateProgress();
-        }, 300);
+        resizeTimer = setTimeout(() => updateProgress(), 300);
       });
 
-      // Guardar estado al cerrar
       window.addEventListener('beforeunload', () => saveState());
 
-      // ---------- Inicio ----------
+      // Inicio
       function init() {
         loadState();
-        // Aplicar estilos iniciales (sin texto aún)
         document.body.className = state.theme === 'light' ? '' : state.theme;
         reader.style.fontSize = state.fontSize + 'rem';
-        reader.style.fontFamily = state.fontFamily;
+        reader.style.fontFamily = FONT_MAP[state.fontKey] || 'Georgia, serif';
         fontSizeDisplay.textContent = state.fontSize.toFixed(1);
 
-        // Resaltar botones de fuente y tema
         document.querySelectorAll('#fontFamilyGroup button').forEach(btn => {
-          btn.classList.toggle('active', btn.dataset.font === state.fontFamily);
+          btn.classList.toggle('active', btn.dataset.font === state.fontKey);
         });
         document.querySelectorAll('#themeGroup button').forEach(btn => {
           btn.classList.toggle('active', btn.dataset.theme === state.theme);
         });
 
-        // Cargar el libro
+        // FORZAR visibilidad de las barras (por si el modo lectura las ocultó)
+        topBar.classList.remove('hidden');
+        bottomBar.classList.remove('hidden');
+        state.barsVisible = true;
+
         loadBook();
       }
 
-      // Asegurar que el DOM está listo
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
       } else {
