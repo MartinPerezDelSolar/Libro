@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Al Final De Los Caminos</title>
+    <title>Lector de Texto</title>
     <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600;7..72,700&display=swap" rel="stylesheet">
-    <!-- Usamos la versión más reciente de epub.js (0.3.71) -->
-    <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.71/dist/epub.min.js"></script>
     <style>
         /* ===== RESET Y BASE ===== */
         * {
@@ -38,13 +36,19 @@
             flex: 1;
             width: 100%;
             height: 100%;
-            position: relative;
+            overflow-y: auto;
+            padding: 20px 10%;
             background: transparent;
-            padding: 0 10%;
             transition: padding 0.2s ease;
+            font-size: 1.1em;
+            line-height: 1.8;
+            color: #2c2c2c;
+            letter-spacing: 0.02em;
+            word-wrap: break-word;
+            white-space: pre-wrap;
         }
         @media (max-width: 480px) {
-            #viewer { padding: 0 6%; }
+            #viewer { padding: 20px 6%; }
         }
         /* ===== BARRAS ===== */
         .bar {
@@ -156,25 +160,6 @@
         }
         #theme-toggle {
             font-size: 1.3rem;
-        }
-        #bookmark-dot {
-            position: absolute;
-            left: 2%;
-            top: 50%;
-            transform: translateY(-50%) scale(0);
-            width: 10px;
-            height: 10px;
-            background: #c9a96e;
-            border-radius: 50%;
-            box-shadow: 0 0 16px rgba(201, 169, 110, 0.5);
-            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
-            opacity: 0;
-            z-index: 40;
-            pointer-events: none;
-        }
-        #bookmark-dot.visible {
-            transform: translateY(-50%) scale(1);
-            opacity: 1;
         }
         /* ===== MODO OSCURO ===== */
         #app.dark-mode {
@@ -317,8 +302,7 @@
             .btn-icon { font-size: 1.3rem; min-width: 38px; min-height: 38px; padding: 4px 6px; }
             #page-counter { font-size: 0.7rem; padding: 2px 10px; }
             .font-group .btn-icon { font-size: 1.0rem; min-width: 30px; min-height: 30px; }
-            #bookmark-dot { left: 1%; width: 8px; height: 8px; }
-            .loader-buttons button { padding: 8px 16px; font-size: 0.8rem; }
+            #viewer { padding: 16px 5%; }
         }
         @supports (padding-top: env(safe-area-inset-top)) {
             #top-bar { padding-top: calc(14px + env(safe-area-inset-top)); }
@@ -332,21 +316,18 @@
     <!-- LOADER -->
     <div id="loader">
         <div class="spinner" id="loader-spinner"></div>
-        <p id="loader-message">Cargando Al Final De Los Caminos...</p>
+        <p id="loader-message">Cargando el libro...</p>
         <div id="loader-hint" class="hint" style="display:none;"></div>
         <div class="loader-buttons">
-            <button id="btn-moby">📖 Probar con Moby Dick</button>
-            <button id="btn-upload" class="secondary">📂 Cargar otro EPUB</button>
+            <button id="btn-upload" class="secondary">📂 Cargar archivo de texto</button>
         </div>
-        <input type="file" id="file-input" accept=".epub" style="display:none;">
+        <input type="file" id="file-input" accept=".txt,.rtf,.text" style="display:none;">
     </div>
-
-    <div id="bookmark-dot"></div>
 
     <!-- BARRA SUPERIOR -->
     <div id="top-bar" class="bar">
-        <span id="book-title">Al Final De Los Caminos</span>
-        <button id="bookmark-btn" class="btn-icon" aria-label="Marcar página">✦</button>
+        <span id="book-title">Mi libro</span>
+        <button id="bookmark-btn" class="btn-icon" aria-label="Marcar posición">✦</button>
     </div>
 
     <!-- VISOR -->
@@ -355,7 +336,7 @@
     <!-- BARRA INFERIOR -->
     <div id="bottom-bar" class="bar">
         <button id="theme-toggle" class="btn-icon" aria-label="Cambiar tema">🌙</button>
-        <span id="page-counter">Pág. 0 de 0</span>
+        <span id="page-counter">0%</span>
         <div class="font-group">
             <button id="font-decrease" class="btn-icon" aria-label="Reducir texto">A<sup>−</sup></button>
             <span id="font-size-label">1.0</span>
@@ -371,7 +352,6 @@
         // ============================
         //  REFERENCIAS
         // ============================
-        const app = document.getElementById('app');
         const viewer = document.getElementById('viewer');
         const loader = document.getElementById('loader');
         const loaderMsg = document.getElementById('loader-message');
@@ -380,7 +360,6 @@
         const titleEl = document.getElementById('book-title');
         const pageCounter = document.getElementById('page-counter');
         const bookmarkBtn = document.getElementById('bookmark-btn');
-        const bookmarkDot = document.getElementById('bookmark-dot');
         const themeToggle = document.getElementById('theme-toggle');
         const fontInc = document.getElementById('font-increase');
         const fontDec = document.getElementById('font-decrease');
@@ -388,21 +367,19 @@
         const topBar = document.getElementById('top-bar');
         const bottomBar = document.getElementById('bottom-bar');
         const fileInput = document.getElementById('file-input');
-        const btnMoby = document.getElementById('btn-moby');
         const btnUpload = document.getElementById('btn-upload');
 
         // ============================
         //  ESTADO
         // ============================
-        const STORAGE_KEY = 'lector_epub_state';
+        const STORAGE_KEY = 'lector_text_state';
         let state = {
             fontSize: 1.0,
             theme: 'light',
-            bookmarkCfi: null,
-            currentCfi: null,
-            totalPages: 1,
-            currentPage: 0,
-            bookReady: false,
+            bookmark: 0,       // porcentaje (0-100)
+            scrollPos: 0,      // posición en píxeles
+            content: '',
+            fileName: 'Mi libro',
         };
 
         try {
@@ -411,33 +388,22 @@
                 const parsed = JSON.parse(saved);
                 state.fontSize = parsed.fontSize || 1.0;
                 state.theme = parsed.theme || 'light';
-                state.bookmarkCfi = parsed.bookmarkCfi || null;
+                state.bookmark = parsed.bookmark || 0;
+                state.scrollPos = parsed.scrollPos || 0;
+                state.fileName = parsed.fileName || 'Mi libro';
             }
         } catch (_) {}
 
+        // Aplicar tema
         if (state.theme === 'dark') {
-            app.classList.add('dark-mode');
+            document.getElementById('app').classList.add('dark-mode');
             themeToggle.textContent = '☀️';
         } else {
             themeToggle.textContent = '🌙';
         }
-        titleEl.textContent = 'Al Final De Los Caminos';
 
         // ============================
-        //  DETECTAR NOMBRE DEL EPUB
-        // ============================
-        function getBookName() {
-            const params = new URLSearchParams(window.location.search);
-            const param = params.get('book');
-            if (param) return param;
-            return 'libro.epub';
-        }
-
-        let bookUrl = getBookName();
-        console.log('📖 Buscando EPUB:', bookUrl);
-
-        // ============================
-        //  FUNCIÓN PARA MOSTRAR ERROR
+        //  FUNCIONES PRINCIPALES
         // ============================
         function showError(msg, hint) {
             loaderMsg.innerHTML = `<span class="error">⚠️ ${msg}</span>`;
@@ -451,179 +417,175 @@
             console.error('❌ Error:', msg);
         }
 
-        function clearError() {
+        function clearLoader() {
             loaderMsg.innerHTML = 'Cargando libro...';
             loaderHint.style.display = 'none';
             loaderSpinner.style.display = 'block';
         }
 
-        // ============================
-        //  INICIALIZAR EPUB.JS
-        // ============================
-        let book, rendition;
-        let locationsGenerated = false;
+        function loadText(content, fileName) {
+            state.content = content;
+            state.fileName = fileName || 'Texto sin nombre';
+            titleEl.textContent = state.fileName.replace(/\.[^.]+$/, ''); // quitar extensión
 
-        function initReader(epubUrl) {
-            // Limpiar estado anterior
-            if (book) {
-                try { book.destroy(); } catch (_) {}
-            }
-            clearError();
-            loader.classList.remove('hidden');
-            locationsGenerated = false;
-            state.bookReady = false;
-            state.totalPages = 1;
-            state.currentPage = 0;
-            updatePageCounter();
+            // Dividir en párrafos (por doble salto de línea o saltos de línea)
+            // Mostramos con <br> para respetar saltos simples y párrafos con doble salto.
+            const paragraphs = content.split(/\n\s*\n/);
+            let html = paragraphs.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+            viewer.innerHTML = html;
 
-            console.log('📖 Inicializando lector con:', epubUrl);
-
-            try {
-                book = ePub(epubUrl, {
-                    styles: {
-                        body: {
-                            'font-family': "'Literata', 'Georgia', serif",
-                            'line-height': '1.8',
-                            'letter-spacing': '0.02em',
-                            'padding': '0 !important',
-                            'margin': '0 !important',
-                            'color': '#2c2c2c',
-                            'background': 'transparent !important',
-                        },
-                        p: { 'margin-bottom': '0.6em' }
-                    }
-                });
-            } catch (err) {
-                showError('Error al crear el lector: ' + err.message, 'Intenta cargar el archivo manualmente.');
-                return;
+            // Restaurar scroll si existe
+            if (state.scrollPos) {
+                setTimeout(() => {
+                    viewer.scrollTop = state.scrollPos;
+                }, 50);
             }
 
-            try {
-                rendition = book.renderTo('viewer', {
-                    width: '100%',
-                    height: '100%',
-                    flow: 'scrolled',
-                    spread: 'none',
-                    ignoreClass: 'epubjs-ignore',
-                });
-            } catch (err) {
-                showError('Error al renderizar: ' + err.message, 'Puede que el archivo tenga un formato no soportado.');
-                return;
-            }
+            // Actualizar porcentaje
+            updateCounter();
 
-            rendition.themes.register('custom', {
-                body: {
-                    'font-family': "'Literata', 'Georgia', serif",
-                    'line-height': '1.8',
-                    'letter-spacing': '0.02em',
-                    'color': '#2c2c2c',
-                    'background': 'transparent !important',
-                }
-            });
-            rendition.themes.select('custom');
-            rendition.themes.fontSize(state.fontSize + 'em');
+            // Ocultar loader
+            loader.classList.add('hidden');
 
-            // ============================
-            //  CARGAR LIBRO CON MANEJO DE ERRORES MEJORADO
-            // ============================
-            book.ready
-                .then(() => {
-                    console.log('✅ EPUB listo. Generando ubicaciones...');
-                    return book.locations.generate(750);
-                })
-                .then(() => {
-                    console.log('✅ Ubicaciones generadas correctamente.');
-                    locationsGenerated = true;
-                    state.totalPages = book.locations.total || 1;
-                    updatePageCounter();
-                    console.log(`📄 Páginas virtuales: ${state.totalPages}`);
-                    return rendition.display();
-                })
-                .then(() => {
-                    console.log('🎉 Libro renderizado con éxito.');
-                    loader.classList.add('hidden');
-                    state.bookReady = true;
-
-                    if (state.bookmarkCfi) {
-                        try {
-                            rendition.display(state.bookmarkCfi);
-                        } catch (_) {}
-                    }
-                    updateBookmarkUI();
-
-                    rendition.on('relocated', (location) => {
-                        if (!location || !location.start) return;
-                        state.currentCfi = location.start.cfi;
-                        if (locationsGenerated) {
-                            const page = book.locations.locationFromCfi(state.currentCfi);
-                            state.currentPage = (page !== undefined && page !== null) ? page + 1 : 0;
-                            updatePageCounter();
-                        }
-                        updateBookmarkUI();
-                    });
-                })
-                .catch((err) => {
-                    console.error('❌ ERROR DETALLADO:', err);
-                    let errorMsg = err.message || 'Error desconocido';
-                    let hint = '';
-
-                    // Mensajes específicos
-                    if (errorMsg.includes('manifest')) {
-                        errorMsg = 'El archivo EPUB no tiene un manifiesto válido.';
-                        hint = '💡 Prueba a abrir el EPUB en Calibre y volver a guardarlo (Convertir → EPUB).';
-                    } else if (errorMsg.includes('spine')) {
-                        errorMsg = 'El archivo EPUB tiene problemas en la estructura "spine".';
-                        hint = '💡 Conviértelo de nuevo con Calibre o usa "Cargar otro EPUB".';
-                    } else if (errorMsg.includes('Failed to fetch')) {
-                        errorMsg = 'No se pudo descargar el archivo.';
-                        hint = `💡 Asegúrate de que el archivo se llame <code>libro.epub</code> y esté en la misma carpeta.<br>O usa el botón "Cargar otro EPUB" para seleccionarlo manualmente.`;
-                    } else if (errorMsg.includes('Error: EPUB parsing')) {
-                        errorMsg = 'Error al parsear el EPUB.';
-                        hint = '💡 Prueba a abrirlo con Calibre y convertirlo a EPUB (versión 2).';
-                    } else {
-                        hint = '💡 Puedes probar con "Moby Dick" para ver si el lector funciona.';
-                    }
-
-                    // Añadir el stack trace al hint si es necesario
-                    if (err.stack) {
-                        hint += `<br><br><details><summary>🧾 Detalle técnico</summary><pre style="font-size:0.7rem;text-align:left;background:rgba(0,0,0,0.05);padding:10px;border-radius:4px;margin-top:6px;overflow:auto;max-width:100%;">${err.stack}</pre></details>`;
-                    }
-
-                    showError(`Error al procesar el EPUB: ${errorMsg}`, hint);
-                });
-        }
-
-        // ============================
-        //  FUNCIONES UI
-        // ============================
-        function updatePageCounter() {
-            const current = Math.min(state.currentPage, state.totalPages);
-            pageCounter.textContent = `Pág. ${current} de ${state.totalPages}`;
-        }
-
-        function updateBookmarkUI() {
-            const hasBookmark = state.bookmarkCfi !== null;
-            bookmarkBtn.classList.toggle('active', hasBookmark);
-            if (hasBookmark && state.currentCfi && state.currentCfi === state.bookmarkCfi) {
-                bookmarkDot.classList.add('visible');
-            } else {
-                bookmarkDot.classList.remove('visible');
-            }
-        }
-
-        function toggleBookmark() {
-            if (!state.bookReady || !state.currentCfi) return;
-            if (state.bookmarkCfi === state.currentCfi) {
-                state.bookmarkCfi = null;
-            } else {
-                state.bookmarkCfi = state.currentCfi;
-            }
+            // Guardar estado
             saveState();
-            updateBookmarkUI();
-            if (navigator.vibrate) navigator.vibrate(10);
         }
 
-        function toggleTheme() {
+        function updateCounter() {
+            if (!viewer.scrollHeight || viewer.clientHeight === 0) {
+                pageCounter.textContent = '0%';
+                return;
+            }
+            const maxScroll = viewer.scrollHeight - viewer.clientHeight;
+            const current = viewer.scrollTop;
+            const percent = maxScroll > 0 ? Math.round((current / maxScroll) * 100) : 0;
+            pageCounter.textContent = percent + '%';
+        }
+
+        function applyFontSize() {
+            viewer.style.fontSize = (1.1 * state.fontSize) + 'em';
+            fontSizeLabel.textContent = state.fontSize.toFixed(1);
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    fontSize: state.fontSize,
+                    theme: state.theme,
+                    bookmark: state.bookmark,
+                    scrollPos: viewer.scrollTop,
+                    fileName: state.fileName,
+                }));
+            } catch (_) {}
+        }
+
+        // ============================
+        //  MANEJO DEL ARCHIVO
+        // ============================
+        function fetchBookFromServer() {
+            // Intentar cargar libro.txt o libro.rtf desde la misma carpeta
+            const files = ['libro.txt', 'libro.rtf'];
+            let tried = 0;
+            let loaded = false;
+
+            function tryNext() {
+                if (loaded || tried >= files.length) {
+                    if (!loaded) {
+                        showError(
+                            'No se encontró ningún archivo de texto.',
+                            'Sube un archivo .txt o .rtf usando el botón "Cargar archivo de texto".'
+                        );
+                    }
+                    return;
+                }
+                const file = files[tried];
+                tried++;
+                fetch(file)
+                    .then(res => {
+                        if (!res.ok) throw new Error('Not found');
+                        return res.text();
+                    })
+                    .then(text => {
+                        loaded = true;
+                        loadText(text, file);
+                    })
+                    .catch(() => {
+                        tryNext();
+                    });
+            }
+
+            // También permitir parámetro en URL: ?book=nombre.txt
+            const params = new URLSearchParams(window.location.search);
+            const param = params.get('book');
+            if (param) {
+                fetch(param)
+                    .then(res => {
+                        if (!res.ok) throw new Error('Not found');
+                        return res.text();
+                    })
+                    .then(text => {
+                        loaded = true;
+                        loadText(text, param);
+                    })
+                    .catch(() => {
+                        // si falla, continuar con los predeterminados
+                        tryNext();
+                    });
+            } else {
+                tryNext();
+            }
+        }
+
+        // ============================
+        //  EVENTOS DE UI
+        // ============================
+        // Subir archivo manual
+        btnUpload.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const content = ev.target.result;
+                loadText(content, file.name);
+                e.target.value = '';
+            };
+            reader.onerror = () => {
+                showError('Error al leer el archivo.', 'Intenta con otro archivo.');
+            };
+            reader.readAsText(file);
+        });
+
+        // Marcador (bookmark)
+        bookmarkBtn.addEventListener('click', () => {
+            const maxScroll = viewer.scrollHeight - viewer.clientHeight;
+            if (maxScroll <= 0) return;
+            const percent = Math.round((viewer.scrollTop / maxScroll) * 100);
+            state.bookmark = percent;
+            // Guardar también la posición exacta para mejor precisión
+            state.scrollPos = viewer.scrollTop;
+            bookmarkBtn.classList.toggle('active', true);
+            saveState();
+            if (navigator.vibrate) navigator.vibrate(10);
+            // Mostrar un feedback visual (parpadeo)
+            bookmarkBtn.style.transform = 'scale(1.2)';
+            setTimeout(() => { bookmarkBtn.style.transform = ''; }, 200);
+        });
+
+        // Restaurar marcador al cargar
+        function restoreBookmark() {
+            if (state.bookmark > 0 && viewer.scrollHeight > viewer.clientHeight) {
+                const maxScroll = viewer.scrollHeight - viewer.clientHeight;
+                const target = (state.bookmark / 100) * maxScroll;
+                viewer.scrollTop = target;
+                bookmarkBtn.classList.add('active');
+                updateCounter();
+            }
+        }
+
+        // Tema
+        themeToggle.addEventListener('click', () => {
+            const app = document.getElementById('app');
             if (state.theme === 'light') {
                 state.theme = 'dark';
                 app.classList.add('dark-mode');
@@ -634,63 +596,30 @@
                 themeToggle.textContent = '🌙';
             }
             saveState();
-        }
+        });
 
-        function changeFontSize(delta) {
-            if (!rendition) return;
-            const newSize = Math.min(2.0, Math.max(0.7, state.fontSize + delta));
-            if (newSize === state.fontSize) return;
-            state.fontSize = newSize;
-            fontSizeLabel.textContent = state.fontSize.toFixed(1);
-            rendition.themes.fontSize(state.fontSize + 'em');
+        // Tamaño de fuente
+        fontInc.addEventListener('click', () => {
+            state.fontSize = Math.min(2.0, state.fontSize + 0.1);
+            applyFontSize();
             saveState();
-
-            if (locationsGenerated && book) {
-                book.locations.generate(750).then(() => {
-                    state.totalPages = book.locations.total || 1;
-                    if (state.currentCfi) {
-                        const page = book.locations.locationFromCfi(state.currentCfi);
-                        state.currentPage = (page !== undefined && page !== null) ? page + 1 : 0;
-                    }
-                    updatePageCounter();
-                });
-            }
-        }
-
-        function saveState() {
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                    fontSize: state.fontSize,
-                    theme: state.theme,
-                    bookmarkCfi: state.bookmarkCfi,
-                }));
-            } catch (_) {}
-        }
-
-        // ============================
-        //  EVENTOS DE BOTONES
-        // ============================
-        btnMoby.addEventListener('click', function() {
-            console.log('📖 Cargando Moby Dick desde CDN...');
-            initReader('https://s3.amazonaws.com/epubjs/books/moby-dick.epub');
+        });
+        fontDec.addEventListener('click', () => {
+            state.fontSize = Math.max(0.7, state.fontSize - 0.1);
+            applyFontSize();
+            saveState();
         });
 
-        btnUpload.addEventListener('click', function() {
-            fileInput.click();
+        // Scroll: actualizar contador y guardar posición
+        viewer.addEventListener('scroll', () => {
+            updateCounter();
+            state.scrollPos = viewer.scrollTop;
+            // Guardar cada cierto tiempo (debounce)
+            clearTimeout(window._scrollSave);
+            window._scrollSave = setTimeout(() => saveState(), 500);
         });
 
-        fileInput.addEventListener('change', function(e) {
-            const file = this.files[0];
-            if (!file) return;
-            const url = URL.createObjectURL(file);
-            console.log('📂 Cargando archivo seleccionado:', file.name);
-            initReader(url);
-            this.value = '';
-        });
-
-        // ============================
-        //  EVENTOS DE UI
-        // ============================
+        // Ocultar barras al tocar
         let barsTimeout = null;
         viewer.addEventListener('click', (e) => {
             if (e.target.closest('.btn-icon') || e.target.closest('a')) return;
@@ -706,56 +635,36 @@
             }
         });
 
+        // Auto-ocultar barras al inicio
         setTimeout(() => {
             topBar.classList.add('hidden');
             bottomBar.classList.add('hidden');
         }, 3000);
 
-        bookmarkBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleBookmark();
-        });
+        // Inicializar
+        applyFontSize();
+        fetchBookFromServer();
 
-        themeToggle.addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleTheme();
-        });
+        // Cuando el contenido se haya cargado, restaurar bookmark y posición
+        // (se llama desde loadText)
+        const origLoad = loadText;
+        loadText = function(content, fileName) {
+            origLoad(content, fileName);
+            // Restaurar bookmark después de que el contenido esté visible
+            setTimeout(restoreBookmark, 100);
+        };
 
-        fontInc.addEventListener('click', (e) => {
-            e.stopPropagation();
-            changeFontSize(0.15);
-        });
-
-        fontDec.addEventListener('click', (e) => {
-            e.stopPropagation();
-            changeFontSize(-0.15);
-        });
-
+        // Recalcular porcentaje al redimensionar
         let resizeTimer;
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
-                if (locationsGenerated && state.bookReady && book) {
-                    book.locations.generate(750).then(() => {
-                        state.totalPages = book.locations.total || 1;
-                        if (state.currentCfi) {
-                            const page = book.locations.locationFromCfi(state.currentCfi);
-                            state.currentPage = (page !== undefined && page !== null) ? page + 1 : 0;
-                        }
-                        updatePageCounter();
-                    });
-                }
-            }, 400);
+                updateCounter();
+                saveState();
+            }, 300);
         });
 
-        fontSizeLabel.textContent = state.fontSize.toFixed(1);
-
-        // ============================
-        //  INICIAR LECTOR
-        // ============================
-        initReader(bookUrl);
-
-        console.log('📖 Lector inicializado correctamente.');
+        console.log('📖 Lector de texto inicializado.');
     })();
 </script>
 </body>
