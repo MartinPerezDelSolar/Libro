@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Al Final De Los Caminos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600;7..72,700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3/dist/epub.min.js"></script>
+    <style>
+        /* ===== RESET Y BASE ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background: #f9f6f0;
+            font-family: 'Literata', 'Georgia', serif;
+            transition: background 0.4s ease, color 0.4s ease;
+        }
+        #app {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            background: #f9f6f0;
+            transition: background 0.4s ease;
+            overflow: hidden;
+        }
+        #viewer {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: transparent;
+            padding: 0 10%;
+            transition: padding 0.2s ease;
+        }
+        @media (max-width: 480px) {
+            #viewer { padding: 0 6%; }
+        }
+        /* ===== BARRAS ===== */
+        .bar {
+            position: absolute;
+            left: 0;
+            right: 0;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(249, 246, 240, 0.75);
+            backdrop-filter: blur(14px) saturate(180%);
+            -webkit-backdrop-filter: blur(14px) saturate(180%);
+            transition: opacity 0.4s ease, transform 0.3s ease, background 0.4s ease;
+            z-index: 50;
+            border: none;
+            user-select: none;
+            min-height: 56px;
+        }
+        .bar.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-100%);
+        }
+        #top-bar {
+            top: 0;
+            border-bottom: 1px solid rgba(201, 169, 110, 0.15);
+        }
+        #bottom-bar {
+            bottom: 0;
+            border-top: 1px solid rgba(201, 169, 110, 0.15);
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        #book-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            letter-spacing: 0.3px;
+            color: #3a3a3a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 50vw;
+            transition: color 0.3s ease;
+        }
+        .btn-icon {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            padding: 6px 10px;
+            cursor: pointer;
+            border-radius: 30px;
+            transition: all 0.2s ease;
+            color: #5a4d3e;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        .btn-icon:active {
+            transform: scale(0.90);
+            background: rgba(201, 169, 110, 0.2);
+        }
+        #bookmark-btn {
+            color: #b0a090;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        #bookmark-btn.active {
+            color: #c9a96e;
+            transform: scale(1.1);
+            text-shadow: 0 0 12px rgba(201, 169, 110, 0.3);
+        }
+        .font-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(0, 0, 0, 0.04);
+            border-radius: 40px;
+            padding: 2px 6px;
+        }
+        .font-group .btn-icon {
+            font-size: 1.2rem;
+            min-width: 36px;
+            min-height: 36px;
+            padding: 0 6px;
+            color: #4a3f33;
+        }
+        #font-size-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #7a6b5a;
+            min-width: 28px;
+            text-align: center;
+            letter-spacing: 0.5px;
+        }
+        #page-counter {
+            font-size: 0.8rem;
+            font-weight: 400;
+            color: #7a6b5a;
+            letter-spacing: 0.4px;
+            background: rgba(0, 0, 0, 0.03);
+            padding: 4px 14px;
+            border-radius: 40px;
+            white-space: nowrap;
+            transition: color 0.3s ease;
+        }
+        #theme-toggle {
+            font-size: 1.3rem;
+        }
+        #bookmark-dot {
+            position: absolute;
+            left: 2%;
+            top: 50%;
+            transform: translateY(-50%) scale(0);
+            width: 10px;
+            height: 10px;
+            background: #c9a96e;
+            border-radius: 50%;
+            box-shadow: 0 0 16px rgba(201, 169, 110, 0.5);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+            opacity: 0;
+            z-index: 40;
+            pointer-events: none;
+        }
+        #bookmark-dot.visible {
+            transform: translateY(-50%) scale(1);
+            opacity: 1;
+        }
+        /* ===== MODO OSCURO ===== */
+        #app.dark-mode {
+            background: #1a1a1e;
+        }
+        #app.dark-mode #viewer {
+            color: #e8e4dd;
+        }
+        #app.dark-mode .bar {
+            background: rgba(26, 26, 30, 0.82);
+            backdrop-filter: blur(14px) saturate(180%);
+            -webkit-backdrop-filter: blur(14px) saturate(180%);
+            border-color: rgba(255, 255, 255, 0.06);
+        }
+        #app.dark-mode #book-title {
+            color: #e0d6c8;
+        }
+        #app.dark-mode .btn-icon {
+            color: #c0b6a8;
+        }
+        #app.dark-mode #page-counter {
+            color: #a09888;
+            background: rgba(255, 255, 255, 0.06);
+        }
+        #app.dark-mode .font-group {
+            background: rgba(255, 255, 255, 0.07);
+        }
+        #app.dark-mode .font-group .btn-icon {
+            color: #d0c8b8;
+        }
+        #app.dark-mode #font-size-label {
+            color: #b0a898;
+        }
+        #app.dark-mode #bookmark-btn {
+            color: #6a6050;
+        }
+        #app.dark-mode #bookmark-btn.active {
+            color: #d4b87a;
+            text-shadow: 0 0 20px rgba(212, 184, 122, 0.3);
+        }
+        /* ===== LOADER ===== */
+        #loader {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            background: #f9f6f0;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+            gap: 20px;
+            text-align: center;
+            padding: 20px;
+        }
+        #app.dark-mode #loader {
+            background: #1a1a1e;
+        }
+        #loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid rgba(201, 169, 110, 0.2);
+            border-top: 3px solid #c9a96e;
+            border-radius: 50%;
+            animation: spin 0.9s cubic-bezier(0.6, 0.2, 0.4, 0.8) infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #loader p {
+            font-size: 0.9rem;
+            color: #7a6b5a;
+            letter-spacing: 0.5px;
+            max-width: 90%;
+        }
+        #loader .error {
+            color: #b02a2a;
+            font-weight: 500;
+        }
+        #loader .hint {
+            font-size: 0.8rem;
+            color: #7a6b5a;
+            background: rgba(0,0,0,0.05);
+            padding: 12px 18px;
+            border-radius: 8px;
+            max-width: 90%;
+            line-height: 1.6;
+        }
+        #loader .hint code {
+            background: rgba(0,0,0,0.08);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+        #app.dark-mode #loader .hint {
+            background: rgba(255,255,255,0.08);
+            color: #b0a898;
+        }
+        #app.dark-mode #loader .hint code {
+            background: rgba(255,255,255,0.15);
+        }
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 480px) {
+            .bar { padding: 10px 14px; min-height: 48px; }
+            #book-title { font-size: 0.8rem; max-width: 35vw; }
+            .btn-icon { font-size: 1.3rem; min-width: 38px; min-height: 38px; padding: 4px 6px; }
+            #page-counter { font-size: 0.7rem; padding: 2px 10px; }
+            .font-group .btn-icon { font-size: 1.0rem; min-width: 30px; min-height: 30px; }
+            #bookmark-dot { left: 1%; width: 8px; height: 8px; }
+        }
+        @supports (padding-top: env(safe-area-inset-top)) {
+            #top-bar { padding-top: calc(14px + env(safe-area-inset-top)); }
+            #bottom-bar { padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- LOADER -->
+    <div id="loader">
+        <div class="spinner" id="loader-spinner"></div>
+        <p id="loader-message">Cargando Al Final De Los Caminos...</p>
+        <div id="loader-hint" class="hint" style="display:none;"></div>
+    </div>
+
+    <div id="bookmark-dot"></div>
+
+    <!-- BARRA SUPERIOR -->
+    <div id="top-bar" class="bar">
+        <span id="book-title">Al Final De Los Caminos</span>
+        <button id="bookmark-btn" class="btn-icon" aria-label="Marcar página">✦</button>
+    </div>
+
+    <!-- VISOR -->
+    <div id="viewer"></div>
+
+    <!-- BARRA INFERIOR -->
+    <div id="bottom-bar" class="bar">
+        <button id="theme-toggle" class="btn-icon" aria-label="Cambiar tema">🌙</button>
+        <span id="page-counter">Pág. 0 de 0</span>
+        <div class="font-group">
+            <button id="font-decrease" class="btn-icon" aria-label="Reducir texto">A<sup>−</sup></button>
+            <span id="font-size-label">1.0</span>
+            <button id="font-increase" class="btn-icon" aria-label="Aumentar texto">A<sup>+</sup></button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        'use strict';
+
+        // ============================
+        //  REFERENCIAS
+        // ============================
+        const app = document.getElementById('app');
+        const viewer = document.getElementById('viewer');
+        const loader = document.getElementById('loader');
+        const loaderMsg = document.getElementById('loader-message');
+        const loaderHint = document.getElementById('loader-hint');
+        const loaderSpinner = document.getElementById('loader-spinner');
+        const titleEl = document.getElementById('book-title');
+        const pageCounter = document.getElementById('page-counter');
+        const bookmarkBtn = document.getElementById('bookmark-btn');
+        const bookmarkDot = document.getElementById('bookmark-dot');
+        const themeToggle = document.getElementById('theme-toggle');
+        const fontInc = document.getElementById('font-increase');
+        const fontDec = document.getElementById('font-decrease');
+        const fontSizeLabel = document.getElementById('font-size-label');
+        const topBar = document.getElementById('top-bar');
+        const bottomBar = document.getElementById('bottom-bar');
+
+        // ============================
+        //  ESTADO
+        // ============================
+        const STORAGE_KEY = 'lector_epub_state';
+        let state = {
+            fontSize: 1.0,
+            theme: 'light',
+            bookmarkCfi: null,
+            currentCfi: null,
+            totalPages: 1,
+            currentPage: 0,
+            bookReady: false,
+        };
+
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                state.fontSize = parsed.fontSize || 1.0;
+                state.theme = parsed.theme || 'light';
+                state.bookmarkCfi = parsed.bookmarkCfi || null;
+            }
+        } catch (_) {}
+
+        if (state.theme === 'dark') {
+            app.classList.add('dark-mode');
+            themeToggle.textContent = '☀️';
+        } else {
+            themeToggle.textContent = '🌙';
+        }
+        titleEl.textContent = 'Al Final De Los Caminos';
+
+        // ============================
+        //  DETECTAR NOMBRE DEL EPUB
+        // ============================
+        function getBookName() {
+            const params = new URLSearchParams(window.location.search);
+            const param = params.get('book');
+            if (param) return param;
+            // CAMBIA ESTA LÍNEA si quieres otro nombre por defecto
+            return 'libro.epub';
+        }
+
+        const bookUrl = getBookName();
+
+        // ============================
+        //  FUNCIÓN PARA MOSTRAR ERROR
+        // ============================
+        function showError(msg, hint) {
+            loaderMsg.innerHTML = `<span class="error">⚠️ ${msg}</span>`;
+            if (hint) {
+                loaderHint.style.display = 'block';
+                loaderHint.innerHTML = hint;
+            } else {
+                loaderHint.style.display = 'none';
+            }
+            loaderSpinner.style.display = 'none';
+        }
+
+        // ============================
+        //  INICIALIZAR EPUB.JS
+        // ============================
+        const book = ePub(bookUrl, {
+            styles: {
+                body: {
+                    'font-family': "'Literata', 'Georgia', serif",
+                    'line-height': '1.8',
+                    'letter-spacing': '0.02em',
+                    'padding': '0 !important',
+                    'margin': '0 !important',
+                    'color': '#2c2c2c',
+                    'background': 'transparent !important',
+                },
+                p: { 'margin-bottom': '0.6em' }
+            }
+        });
+
+        const rendition = book.renderTo('viewer', {
+            width: '100%',
+            height: '100%',
+            flow: 'scrolled',
+            spread: 'none',
+            ignoreClass: 'epubjs-ignore',
+        });
+
+        rendition.themes.register('custom', {
+            body: {
+                'font-family': "'Literata', 'Georgia', serif",
+                'line-height': '1.8',
+                'letter-spacing': '0.02em',
+                'color': '#2c2c2c',
+                'background': 'transparent !important',
+            }
+        });
+        rendition.themes.select('custom');
+        rendition.themes.fontSize(state.fontSize + 'em');
+
+        let locationsGenerated = false;
+
+        // ============================
+        //  CARGAR LIBRO
+        // ============================
+        book.ready
+            .then(() => book.locations.generate(750))
+            .then(() => {
+                locationsGenerated = true;
+                state.totalPages = book.locations.total || 1;
+                updatePageCounter();
+                return rendition.display();
+            })
+            .then(() => {
+                loader.classList.add('hidden');
+                state.bookReady = true;
+
+                if (state.bookmarkCfi) {
+                    try {
+                        rendition.display(state.bookmarkCfi);
+                    } catch (_) {}
+                }
+                updateBookmarkUI();
+
+                rendition.on('relocated', (location) => {
+                    if (!location || !location.start) return;
+                    state.currentCfi = location.start.cfi;
+                    if (locationsGenerated) {
+                        const page = book.locations.locationFromCfi(state.currentCfi);
+                        state.currentPage = (page !== undefined && page !== null) ? page + 1 : 0;
+                        updatePageCounter();
+                    }
+                    updateBookmarkUI();
+                });
+            })
+            .catch((err) => {
+                console.error('Error cargando EPUB:', err);
+                let hint = '';
+                if (bookUrl === 'libro.epub') {
+                    hint = `💡 <strong>Recomendación:</strong> Renombra tu archivo EPUB a <code>libro.epub</code> (todo minúscula, sin espacios).<br>
+                            O usa el parámetro en la URL: <code>?book=nombre.epub</code>`;
+                } else {
+                    hint = `💡 Asegúrate de que el archivo <code>${bookUrl}</code> esté en la misma carpeta.<br>
+                            O usa el parámetro en la URL: <code>?book=nombre.epub</code>`;
+                }
+                showError(`No se pudo cargar el archivo "${bookUrl}".`, hint);
+            });
+
+        // ============================
+        //  FUNCIONES UI
+        // ============================
+        function updatePageCounter() {
+            const current = Math.min(state.currentPage, state.totalPages);
+            pageCounter.textContent = `Pág. ${current} de ${state.totalPages}`;
+        }
+
+        function updateBookmarkUI() {
+            const hasBookmark = state.bookmarkCfi !== null;
+            bookmarkBtn.classList.toggle('active', hasBookmark);
+            if (hasBookmark && state.currentCfi && state.currentCfi === state.bookmarkCfi) {
+                bookmarkDot.classList.add('visible');
+            } else {
+                bookmarkDot.classList.remove('visible');
+            }
+        }
+
+        function toggleBookmark() {
+            if (!state.bookReady || !state.currentCfi) return;
+            if (state.bookmarkCfi === state.currentCfi) {
+                state.bookmarkCfi = null;
+            } else {
+                state.bookmarkCfi = state.currentCfi;
+            }
+            saveState();
+            updateBookmarkUI();
+            if (navigator.vibrate) navigator.vibrate(10);
+        }
+
+        function toggleTheme() {
+            if (state.theme === 'light') {
+                state.theme = 'dark';
+                app.classList.add('dark-mode');
+                themeToggle.textContent = '☀️';
+            } else {
+                state.theme = 'light';
+                app.classList.remove('dark-mode');
+                themeToggle.textContent = '🌙';
+            }
+            saveState();
+        }
+
+        function changeFontSize(delta) {
+            const newSize = Math.min(2.0, Math.max(0.7, state.fontSize + delta));
+            if (newSize === state.fontSize) return;
+            state.fontSize = newSize;
+            fontSizeLabel.textContent = state.fontSize.toFixed(1);
+            rendition.themes.fontSize(state.fontSize + 'em');
+            saveState();
+
+            if (locationsGenerated) {
+                book.locations.generate(750).then(() => {
+                    state.totalPages = book.locations.total || 1;
+                    if (state.currentCfi) {
+                        const page = book.locations.locationFromCfi(state.currentCfi);
+                        state.currentPage = (page !== undefined && page !== null) ? page + 1 : 0;
+                    }
+                    updatePageCounter();
+                });
+            }
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    fontSize: state.fontSize,
+                    theme: state.theme,
+                    bookmarkCfi: state.bookmarkCfi,
+                }));
+            } catch (_) {}
+        }
+
+        // ============================
+        //  EVENTOS
+        // ============================
+        let barsTimeout = null;
+        viewer.addEventListener('click', (e) => {
+            if (e.target.closest('.btn-icon') || e.target.closest('a')) return;
+            const isHidden = topBar.classList.contains('hidden');
+            topBar.classList.toggle('hidden', !isHidden);
+            bottomBar.classList.toggle('hidden', !isHidden);
+            clearTimeout(barsTimeout);
+            if (!topBar.classList.contains('hidden')) {
+                barsTimeout = setTimeout(() => {
+                    topBar.classList.add('hidden');
+                    bottomBar.classList.add('hidden');
+                }, 4500);
+            }
+        });
+
+        setTimeout(() => {
+            topBar.classList.add('hidden');
+            bottomBar.classList.add('hidden');
+        }, 3000);
+
+        bookmarkBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleBookmark();
+        });
+
+        themeToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleTheme();
+        });
+
+        fontInc.addEventListener('click', (e) => {
+            e.stopPropagation();
+            changeFontSize(0.15);
+        });
+
+        fontDec.addEventListener('click', (e) => {
+            e.stopPropagation();
+            changeFontSize(-0.15);
+        });
+
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                if (locationsGenerated && state.bookReady) {
+                    book.locations.generate(750).then(() => {
+                        state.totalPages = book.locations.total || 1;
+                        if (state.currentCfi) {
+                            const page = book.locations.locationFromCfi(state.currentCfi);
+                            state.currentPage = (page !== undefined && page !== null) ? page + 1 : 0;
+                        }
+                        updatePageCounter();
+                    });
+                }
+            }, 400);
+        });
+
+        fontSizeLabel.textContent = state.fontSize.toFixed(1);
+        if (state.bookmarkCfi) {
+            setTimeout(() => {
+                if (state.bookReady) {
+                    try {
+                        rendition.display(state.bookmarkCfi);
+                    } catch (_) {}
+                }
+            }, 500);
+        }
+
+        console.log(`📖 Lector cargado. Buscando: "${bookUrl}"`);
+    })();
+</script>
+</body>
+</html>
