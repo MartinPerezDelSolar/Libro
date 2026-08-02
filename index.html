@@ -2,7 +2,6 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <!-- Meta para evitar modo lectura en Safari y otros -->
   <meta name="readability-verification" content="none" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
@@ -21,14 +20,11 @@
       --text: #2c2c2c;
       --bar-bg: rgba(247, 243, 238, 0.92);
       --border: rgba(0,0,0,0.06);
-      --shadow: 0 2px 12px rgba(0,0,0,0.06);
       --accent: #b8956a;
       --accent-light: rgba(184, 149, 106, 0.2);
-      --radius: 12px;
       --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* FORZAR estilos para que el modo lectura no los anule */
     body {
       background: var(--bg) !important;
       color: var(--text) !important;
@@ -67,10 +63,8 @@
       transition: background var(--transition);
       position: relative !important;
       overflow: hidden !important;
-      box-shadow: 0 0 40px rgba(0,0,0,0.04);
     }
 
-    /* Área de lectura */
     #reader {
       flex: 1 !important;
       overflow-y: auto !important;
@@ -89,10 +83,10 @@
       margin: 0 0 1.4em 0 !important;
       text-align: justify !important;
       font-size: 1rem !important;
-      transition: font-size 0.25s ease;
+      transition: font-size 0.15s ease !important;
     }
 
-    /* Barra superior (solo menú) - FORZADA visible */
+    /* Barra superior */
     #top-bar {
       display: flex !important;
       align-items: center !important;
@@ -129,7 +123,7 @@
       background: var(--accent-light) !important;
     }
 
-    /* Barra inferior de progreso - FORZADA visible */
+    /* Barra inferior */
     #bottom-bar {
       display: flex !important;
       align-items: center !important;
@@ -196,7 +190,7 @@
       text-align: right !important;
     }
 
-    /* Panel lateral (menú) */
+    /* Menú lateral */
     .menu-overlay {
       position: fixed !important;
       inset: 0 !important;
@@ -236,58 +230,60 @@
       transform: translateX(0) !important;
     }
 
-    /* ... (resto de estilos del menú y temas igual que antes, pero con !important en lo crítico) */
-    /* Por brevedad, mantengo las mismas reglas que en la versión anterior, 
-       pero añadiendo !important donde sea necesario para resistir al modo lectura */
     .menu-panel h2 {
       font-size: 1.1rem !important;
       font-weight: 500 !important;
       letter-spacing: 0.05em !important;
       opacity: 0.7 !important;
-      margin: 0 0 4px 0 !important;
       border-bottom: 1px solid var(--border) !important;
       padding-bottom: 12px !important;
+      margin-bottom: 4px !important;
     }
-    /* ... el resto de estilos del menú ya estaban bien, los dejaré igual */
-    /* (copio el resto para no repetir) */
+
     .menu-section {
       display: flex !important;
       flex-direction: column !important;
       gap: 10px !important;
     }
+
     .menu-section label {
       font-size: 0.8rem !important;
       opacity: 0.6 !important;
       text-transform: uppercase !important;
       letter-spacing: 0.06em !important;
     }
+
     .font-size-control {
       display: flex !important;
       align-items: center !important;
-      gap: 12px !important;
+      gap: 16px !important;
     }
     .font-size-control button {
       background: var(--border) !important;
       border: none !important;
       color: var(--text) !important;
-      width: 36px !important;
-      height: 36px !important;
+      width: 40px !important;
+      height: 40px !important;
       border-radius: 50% !important;
-      font-size: 1.2rem !important;
+      font-size: 1.4rem !important;
       cursor: pointer !important;
       transition: background 0.2s, transform 0.1s !important;
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
+      touch-action: manipulation !important;
+      user-select: none !important;
     }
     .font-size-control button:active {
-      transform: scale(0.92) !important;
+      transform: scale(0.90) !important;
     }
     .font-size-control span {
-      min-width: 40px !important;
+      min-width: 44px !important;
       text-align: center !important;
-      font-size: 0.9rem !important;
+      font-size: 1.1rem !important;
+      font-weight: 500 !important;
     }
+
     .font-family-group {
       display: flex !important;
       flex-wrap: wrap !important;
@@ -309,6 +305,7 @@
       background: var(--accent-light) !important;
       color: var(--accent) !important;
     }
+
     .theme-group {
       display: flex !important;
       gap: 8px !important;
@@ -339,6 +336,7 @@
     .theme-group button[data-theme="light"] .preview { background: #f7f3ee; border:1px solid #ddd; }
     .theme-group button[data-theme="sepia"] .preview { background: #f6edd8; border:1px solid #d4c9b0; }
     .theme-group button[data-theme="dark"] .preview { background: #18181c; border:1px solid #444; }
+
     .bookmark-actions {
       display: flex !important;
       gap: 10px !important;
@@ -362,6 +360,7 @@
       background: var(--accent-light) !important;
       color: var(--accent) !important;
     }
+
     .close-menu {
       margin-top: auto !important;
       padding: 12px !important;
@@ -377,7 +376,6 @@
       background: var(--accent-light) !important;
     }
 
-    /* Toast */
     .toast {
       position: fixed !important;
       bottom: 80px !important;
@@ -419,15 +417,12 @@
 </head>
 <body>
   <div id="app">
-    <!-- Barra superior: solo menú -->
     <header id="top-bar">
       <button class="menu-btn" id="menuToggle" aria-label="Menú">☰</button>
     </header>
 
-    <!-- Área de lectura -->
     <main id="reader"></main>
 
-    <!-- Barra inferior -->
     <footer id="bottom-bar">
       <div class="progress-track">
         <div class="progress-fill" id="progressFill"></div>
@@ -437,7 +432,6 @@
     </footer>
   </div>
 
-  <!-- Overlay y panel del menú -->
   <div class="menu-overlay" id="menuOverlay"></div>
   <aside class="menu-panel" id="menuPanel">
     <h2>Configuración</h2>
@@ -445,9 +439,9 @@
     <div class="menu-section">
       <label>Tamaño de fuente</label>
       <div class="font-size-control">
-        <button id="fontDec">−</button>
+        <button type="button" id="fontDec">−</button>
         <span id="fontSizeDisplay">1.0</span>
-        <button id="fontInc">+</button>
+        <button type="button" id="fontInc">+</button>
       </div>
     </div>
 
@@ -455,7 +449,7 @@
       <label>Tipo de fuente</label>
       <div class="font-family-group" id="fontFamilyGroup">
         <button data-font="georgia">Georgia</button>
-        <button data-font="times">Times New Roman</button>
+        <button data-font="times">Times</button>
         <button data-font="arial">Arial</button>
         <button data-font="verdana">Verdana</button>
         <button data-font="palatino">Palatino</button>
@@ -463,7 +457,7 @@
     </div>
 
     <div class="menu-section">
-      <label>Tema de lectura</label>
+      <label>Tema</label>
       <div class="theme-group" id="themeGroup">
         <button data-theme="light">Claro <span class="preview"></span></button>
         <button data-theme="sepia">Sepia <span class="preview"></span></button>
@@ -482,14 +476,13 @@
     <button class="close-menu" id="closeMenu">Cerrar</button>
   </aside>
 
-  <!-- Toast -->
   <div id="toast" class="toast"></div>
 
   <script>
     (function() {
       'use strict';
 
-      console.log('📖 Lector Ágil v2.2 - Anti-modo lectura');
+      console.log('📖 Lector Ágil v2.3 - Tamaño de texto corregido');
 
       // Mapeo de fuentes
       const FONT_MAP = {
@@ -500,7 +493,7 @@
         palatino: '"Palatino Linotype", "Book Antiqua", serif'
       };
 
-      // DOM refs
+      // DOM
       const reader = document.getElementById('reader');
       const topBar = document.getElementById('top-bar');
       const bottomBar = document.getElementById('bottom-bar');
@@ -527,15 +520,12 @@
         theme: 'light',
         bookmark: null,
         scrollPercent: 0,
-        totalPages: 1,
-        currentPage: 1,
-        menuOpen: false,
         barsVisible: true,
       };
 
-      const MIN_FONT = 0.7;
-      const MAX_FONT = 2.0;
-      const FONT_STEP = 0.08;
+      const MIN_FONT = 0.6;
+      const MAX_FONT = 3.0;
+      const FONT_STEP = 0.1;
       const STORAGE_KEY = 'lector_agile_config';
 
       // Persistencia
@@ -544,7 +534,7 @@
           const raw = localStorage.getItem(STORAGE_KEY);
           if (!raw) return false;
           const saved = JSON.parse(raw);
-          if (saved.fontSize) state.fontSize = Math.min(MAX_FONT, Math.max(MIN_FONT, saved.fontSize));
+          if (saved.fontSize !== undefined) state.fontSize = Math.min(MAX_FONT, Math.max(MIN_FONT, saved.fontSize));
           if (saved.fontKey && FONT_MAP[saved.fontKey]) state.fontKey = saved.fontKey;
           if (saved.theme) state.theme = saved.theme;
           if (saved.bookmark !== undefined) state.bookmark = saved.bookmark;
@@ -564,7 +554,32 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       }
 
-      // Temas
+      // Aplicar tamaño con límites
+      function applyFontSize(size) {
+        let newSize = Math.min(MAX_FONT, Math.max(MIN_FONT, size));
+        if (newSize === state.fontSize) return;
+        state.fontSize = newSize;
+        reader.style.fontSize = state.fontSize + 'rem';
+        fontSizeDisplay.textContent = state.fontSize.toFixed(1);
+        saveState();
+        // Recalcular progreso (puede cambiar el alto)
+        requestAnimationFrame(() => updateProgress());
+        console.log('🔠 Tamaño fuente:', state.fontSize);
+      }
+
+      function applyFontFamily(key) {
+        if (!FONT_MAP[key]) return;
+        state.fontKey = key;
+        reader.style.fontFamily = FONT_MAP[key];
+        // Resaltar botón
+        document.querySelectorAll('#fontFamilyGroup button').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.font === key);
+        });
+        saveState();
+        showToast(`Fuente: ${key.charAt(0).toUpperCase() + key.slice(1)}`);
+        requestAnimationFrame(() => updateProgress());
+      }
+
       function applyTheme(theme) {
         document.body.className = theme === 'light' ? '' : theme;
         state.theme = theme;
@@ -572,30 +587,6 @@
           btn.classList.toggle('active', btn.dataset.theme === theme);
         });
         saveState();
-      }
-
-      // Fuentes y tamaño
-      function applyFontSize(size) {
-        state.fontSize = Math.min(MAX_FONT, Math.max(MIN_FONT, size));
-        reader.style.fontSize = state.fontSize + 'rem';
-        fontSizeDisplay.textContent = state.fontSize.toFixed(1);
-        saveState();
-        requestAnimationFrame(() => updateProgress());
-      }
-
-      function applyFontFamily(key) {
-        if (!FONT_MAP[key]) return;
-        state.fontKey = key;
-        const family = FONT_MAP[key];
-        reader.style.fontFamily = family;
-        void reader.offsetHeight;
-        document.querySelectorAll('#fontFamilyGroup button').forEach(btn => {
-          btn.classList.toggle('active', btn.dataset.font === key);
-        });
-        saveState();
-        showToast(`Fuente: ${key.charAt(0).toUpperCase() + key.slice(1)}`);
-        requestAnimationFrame(() => updateProgress());
-        console.log(`🔤 Fuente: ${family}`);
       }
 
       // Progreso
@@ -606,8 +597,6 @@
 
         if (scrollHeight <= clientHeight) {
           progressFill.style.width = '100%';
-          state.currentPage = 1;
-          state.totalPages = 1;
           pageInfo.textContent = 'Pág. 1';
           return;
         }
@@ -616,9 +605,9 @@
         const percent = Math.min(1, scrollTop / maxScroll);
         progressFill.style.width = (percent * 100) + '%';
 
-        state.totalPages = Math.ceil(scrollHeight / clientHeight);
-        state.currentPage = Math.min(state.totalPages, Math.floor(scrollTop / clientHeight) + 1);
-        pageInfo.textContent = `Pág. ${state.currentPage} de ${state.totalPages}`;
+        const totalPages = Math.ceil(scrollHeight / clientHeight);
+        const currentPage = Math.min(totalPages, Math.floor(scrollTop / clientHeight) + 1);
+        pageInfo.textContent = `Pág. ${currentPage} de ${totalPages}`;
 
         if (state.bookmark !== null) {
           const bmPercent = Math.min(1, Math.max(0, state.bookmark));
@@ -643,10 +632,9 @@
       }
 
       function restoreScrollPosition() {
-        if (state.scrollPercent !== undefined && state.scrollPercent > 0) {
+        if (state.scrollPercent > 0) {
           const maxScroll = reader.scrollHeight - reader.clientHeight;
-          const target = state.scrollPercent * maxScroll;
-          reader.scrollTop = target;
+          reader.scrollTop = state.scrollPercent * maxScroll;
         }
         updateProgress();
       }
@@ -657,7 +645,7 @@
         const scrollHeight = reader.scrollHeight;
         const clientHeight = reader.clientHeight;
         if (scrollHeight <= clientHeight) {
-          showToast('No hay suficiente texto para marcar');
+          showToast('No hay suficiente texto');
           return;
         }
         const maxScroll = scrollHeight - clientHeight;
@@ -669,13 +657,12 @@
 
       function goToBookmark() {
         if (state.bookmark === null) {
-          showToast('No hay marcador guardado');
+          showToast('No hay marcador');
           return;
         }
         const maxScroll = reader.scrollHeight - reader.clientHeight;
-        const target = state.bookmark * maxScroll;
-        reader.scrollTo({ top: target, behavior: 'smooth' });
-        showToast('📍 Yendo al marcador');
+        reader.scrollTo({ top: state.bookmark * maxScroll, behavior: 'smooth' });
+        showToast('📍 Ir al marcador');
       }
 
       // Cargar libro
@@ -691,9 +678,9 @@
             reader.innerHTML = '<p><em>El libro está vacío.</em></p>';
             return;
           }
-          const html = paragraphs.map(p => `<p>${escapeHtml(p.trim())}</p>`).join('');
-          reader.innerHTML = html;
+          reader.innerHTML = paragraphs.map(p => `<p>${escapeHtml(p.trim())}</p>`).join('');
 
+          // Aplicar estilos guardados
           applyFontSize(state.fontSize);
           applyFontFamily(state.fontKey);
           applyTheme(state.theme);
@@ -718,10 +705,11 @@
 
       // Menú
       function toggleMenu(open) {
-        state.menuOpen = (open !== undefined) ? open : !state.menuOpen;
-        menuPanel.classList.toggle('open', state.menuOpen);
-        menuOverlay.classList.toggle('open', state.menuOpen);
-        document.body.style.overflow = state.menuOpen ? 'hidden' : '';
+        const newState = (open !== undefined) ? open : !state.menuOpen;
+        state.menuOpen = newState;
+        menuPanel.classList.toggle('open', newState);
+        menuOverlay.classList.toggle('open', newState);
+        document.body.style.overflow = newState ? 'hidden' : '';
       }
 
       // Toast
@@ -739,7 +727,7 @@
         }, duration);
       }
 
-      // Ocultar/mostrar barras
+      // Ocultar barras
       function toggleBars() {
         state.barsVisible = !state.barsVisible;
         topBar.classList.toggle('hidden', !state.barsVisible);
@@ -757,20 +745,27 @@
       menuOverlay.addEventListener('click', () => toggleMenu(false));
       closeMenu.addEventListener('click', () => toggleMenu(false));
 
-      fontDec.addEventListener('click', () => applyFontSize(state.fontSize - FONT_STEP));
-      fontInc.addEventListener('click', () => applyFontSize(state.fontSize + FONT_STEP));
+      // Botones de tamaño - con comprobación
+      fontDec.addEventListener('click', function(e) {
+        e.stopPropagation();
+        applyFontSize(state.fontSize - FONT_STEP);
+      });
+      fontInc.addEventListener('click', function(e) {
+        e.stopPropagation();
+        applyFontSize(state.fontSize + FONT_STEP);
+      });
 
       fontFamilyGroup.addEventListener('click', (e) => {
         const btn = e.target.closest('button');
-        if (!btn) return;
-        const key = btn.dataset.font;
-        if (key && FONT_MAP[key]) applyFontFamily(key);
+        if (btn) {
+          const key = btn.dataset.font;
+          if (key && FONT_MAP[key]) applyFontFamily(key);
+        }
       });
 
       themeGroup.addEventListener('click', (e) => {
         const btn = e.target.closest('button');
-        if (!btn) return;
-        applyTheme(btn.dataset.theme);
+        if (btn) applyTheme(btn.dataset.theme);
       });
 
       saveBookmarkBtn.addEventListener('click', saveBookmark);
@@ -787,22 +782,24 @@
       // Inicio
       function init() {
         loadState();
+        // Forzar visibilidad inicial
+        topBar.classList.remove('hidden');
+        bottomBar.classList.remove('hidden');
+        state.barsVisible = true;
+
+        // Aplicar estilos base
         document.body.className = state.theme === 'light' ? '' : state.theme;
         reader.style.fontSize = state.fontSize + 'rem';
         reader.style.fontFamily = FONT_MAP[state.fontKey] || 'Georgia, serif';
         fontSizeDisplay.textContent = state.fontSize.toFixed(1);
 
+        // Resaltar botones activos
         document.querySelectorAll('#fontFamilyGroup button').forEach(btn => {
           btn.classList.toggle('active', btn.dataset.font === state.fontKey);
         });
         document.querySelectorAll('#themeGroup button').forEach(btn => {
           btn.classList.toggle('active', btn.dataset.theme === state.theme);
         });
-
-        // FORZAR visibilidad de las barras (por si el modo lectura las ocultó)
-        topBar.classList.remove('hidden');
-        bottomBar.classList.remove('hidden');
-        state.barsVisible = true;
 
         loadBook();
       }
