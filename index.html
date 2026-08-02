@@ -1,669 +1,151 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Lector Minimalista</title>
-  <style>
-    /* Reset y estilos base */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    body {
-      background: #f9f6f0;
-      color: #2c2c2c;
-      font-family: 'Georgia', serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      margin: 0;
-      transition: background 0.4s ease, color 0.4s ease;
-    }
-
-    body.dark {
-      background: #1a1a1e;
-      color: #e0ddd8;
-    }
-
-    #app {
-      width: 100%;
-      max-width: 680px;
-      height: 100vh;
-      height: 100dvh; /* Para móviles modernos */
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      overflow: hidden;
-      background: inherit;
-    }
-
-    /* Barras de control */
-    .bar {
-      background: rgba(249, 246, 240, 0.92);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      padding: 8px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-      transition: transform 0.35s ease, opacity 0.35s ease, background 0.4s ease;
-      border-bottom: 1px solid rgba(0,0,0,0.05);
-      z-index: 10;
-    }
-
-    body.dark .bar {
-      background: rgba(26, 26, 30, 0.92);
-      border-bottom-color: rgba(255,255,255,0.05);
-    }
-
-    #top-bar {
-      transform: translateY(0);
-      opacity: 1;
-    }
-
-    #top-bar.hidden {
-      transform: translateY(-100%);
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    #bottom-bar {
-      border-top: 1px solid rgba(0,0,0,0.05);
-      border-bottom: none;
-      transform: translateY(0);
-      opacity: 1;
-    }
-
-    body.dark #bottom-bar {
-      border-top-color: rgba(255,255,255,0.05);
-    }
-
-    #bottom-bar.hidden {
-      transform: translateY(100%);
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    /* Área de lectura */
-    #reader {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px 20px 20px 20px;
-      scroll-behavior: smooth;
-      -webkit-overflow-scrolling: touch;
-      background: inherit;
-      transition: background 0.4s ease;
-      position: relative;
-    }
-
-    #reader p {
-      margin: 0 0 1.2em 0;
-      line-height: 1.8;
-      letter-spacing: 0.02em;
-      text-align: justify;
-      font-size: 1rem;
-      transition: font-size 0.3s ease;
-      word-break: break-word;
-    }
-
-    /* Personalización de scroll (opcional) */
-    #reader::-webkit-scrollbar {
-      width: 4px;
-    }
-    #reader::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    #reader::-webkit-scrollbar-thumb {
-      background: #c9a96e;
-      border-radius: 8px;
-    }
-
-    /* Botones */
-    .btn {
-      background: transparent;
-      border: none;
-      color: inherit;
-      font-size: 1.1rem;
-      padding: 6px 10px;
-      cursor: pointer;
-      border-radius: 8px;
-      transition: background 0.2s, transform 0.2s, color 0.2s;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 36px;
-      min-height: 36px;
-      touch-action: manipulation;
-    }
-
-    .btn:hover {
-      background: rgba(0,0,0,0.05);
-    }
-    body.dark .btn:hover {
-      background: rgba(255,255,255,0.08);
-    }
-    .btn:active {
-      transform: scale(0.94);
-    }
-
-    .btn-icon {
-      font-size: 1.3rem;
-      line-height: 1;
-    }
-
-    .btn-bookmark.active {
-      color: #c9a96e;
-      text-shadow: 0 0 8px rgba(201, 169, 110, 0.3);
-    }
-
-    .btn-font {
-      font-size: 0.9rem;
-      padding: 4px 10px;
-      border: 1px solid rgba(0,0,0,0.1);
-      border-radius: 20px;
-      margin: 0 2px;
-      background: rgba(0,0,0,0.03);
-    }
-    body.dark .btn-font {
-      border-color: rgba(255,255,255,0.15);
-      background: rgba(255,255,255,0.05);
-    }
-    .btn-font.active-font {
-      border-color: #c9a96e;
-      background: rgba(201, 169, 110, 0.15);
-      color: #c9a96e;
-    }
-
-    .btn-mode {
-      font-size: 1.2rem;
-    }
-
-    /* Grupo de fuentes en top-bar */
-    .font-group {
-      display: flex;
-      gap: 4px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    /* Progreso en bottom-bar */
-    .progress-container {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex: 1;
-    }
-
-    .progress-bar {
-      flex: 1;
-      height: 3px;
-      background: rgba(0,0,0,0.1);
-      border-radius: 4px;
-      position: relative;
-      overflow: visible;
-    }
-    body.dark .progress-bar {
-      background: rgba(255,255,255,0.12);
-    }
-
-    .progress-fill {
-      height: 100%;
-      width: 0%;
-      background: #c9a96e;
-      border-radius: 4px;
-      transition: width 0.2s ease;
-    }
-
-    .progress-text {
-      font-size: 0.75rem;
-      font-variant-numeric: tabular-nums;
-      letter-spacing: 0.02em;
-      opacity: 0.7;
-      white-space: nowrap;
-      min-width: 70px;
-    }
-
-    .bookmark-indicator {
-      position: absolute;
-      top: -4px;
-      right: -6px;
-      width: 10px;
-      height: 10px;
-      background: #c9a96e;
-      border-radius: 50%;
-      box-shadow: 0 0 10px rgba(201, 169, 110, 0.5);
-      opacity: 0;
-      transform: scale(0.5);
-      transition: opacity 0.3s, transform 0.3s;
-      pointer-events: none;
-    }
-    .bookmark-indicator.visible {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    /* Mensaje flotante (toast) */
-    .toast {
-      position: fixed;
-      bottom: 80px;
-      left: 50%;
-      transform: translateX(-50%) translateY(20px);
-      background: rgba(0,0,0,0.75);
-      color: #fff;
-      padding: 10px 22px;
-      border-radius: 30px;
-      font-size: 0.9rem;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.4s ease, transform 0.4s ease;
-      z-index: 100;
-      backdrop-filter: blur(4px);
-    }
-    .toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-
-    /* Ajustes para móviles muy pequeños */
-    @media (max-width: 480px) {
-      .bar {
-        padding: 6px 10px;
-      }
-      .btn {
-        font-size: 1rem;
-        padding: 4px 6px;
-        min-width: 32px;
-        min-height: 32px;
-      }
-      .btn-font {
-        font-size: 0.7rem;
-        padding: 2px 8px;
-      }
-      #reader {
-        padding: 12px 16px;
-      }
-      .progress-text {
-        font-size: 0.65rem;
-        min-width: 60px;
-      }
-    }
-
-    /* Animación de marcador */
-    @keyframes bookmarkPop {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.4); }
-      100% { transform: scale(1); }
-    }
-    .btn-bookmark.pop {
-      animation: bookmarkPop 0.3s ease;
-    }
-
-    /* Evitar selección de texto en botones */
-    .btn, .bar {
-      user-select: none;
-    }
-  </style>
-</head>
-<body>
-  <div id="app">
-    <!-- Barra superior -->
-    <header id="top-bar" class="bar">
-      <div class="font-group">
-        <button class="btn btn-font" data-font="Georgia">Georgia</button>
-        <button class="btn btn-font" data-font="'Times New Roman', serif">Times</button>
-        <button class="btn btn-font" data-font="Arial, sans-serif">Arial</button>
-        <button class="btn btn-font" data-font="Verdana, sans-serif">Verdana</button>
-        <button class="btn btn-font" data-font="'Palatino Linotype', 'Book Antiqua', serif">Palatino</button>
-      </div>
-      <div style="display: flex; gap: 4px;">
-        <button class="btn btn-mode" id="modeToggle" title="Modo claro/oscuro">🌙</button>
-        <button class="btn btn-bookmark" id="bookmarkBtn" title="Marcador">🔖</button>
-      </div>
-    </header>
-
-    <!-- Área de lectura -->
-    <main id="reader">
-      <!-- El texto se inyecta aquí -->
-    </main>
-
-    <!-- Barra inferior -->
-    <footer id="bottom-bar" class="bar">
-      <div class="progress-container">
-        <span class="progress-text" id="pageInfo">Pág. 1 de 1</span>
-        <div class="progress-bar">
-          <div class="progress-fill" id="progressFill"></div>
-          <span class="bookmark-indicator" id="bookmarkDot"></span>
-        </div>
-      </div>
-      <div style="display: flex; gap: 4px;">
-        <button class="btn" id="fontDecrease" title="Reducir texto">A-</button>
-        <button class="btn" id="fontIncrease" title="Aumentar texto">A+</button>
-      </div>
-    </footer>
-
-    <!-- Toast -->
-    <div id="toast" class="toast"></div>
+<!-- HTML -->
+<div class="font-control-container">
+  <button class="font-toggle-btn" onclick="toggleFontPanel()">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+  <div class="font-panel" id="fontPanel">
+    <div class="font-option">
+      <label>Fuente:</label>
+      <select id="fontSelect" onchange="applyFont()">
+        <option value="serif">Serif</option>
+        <option value="sans-serif">Sans-serif</option>
+        <option value="monospace">Mono</option>
+      </select>
+    </div>
+    <div class="font-option">
+      <label>Tamaño:</label>
+      <input type="range" id="sizeRange" min="12" max="24" value="16" oninput="applySize()">
+      <span id="sizeDisplay">16px</span>
+    </div>
   </div>
+</div>
 
-  <script>
-    (function() {
-      'use strict';
+<style>
+  .font-control-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+  }
 
-      // Elementos DOM
-      const reader = document.getElementById('reader');
-      const topBar = document.getElementById('top-bar');
-      const bottomBar = document.getElementById('bottom-bar');
-      const progressFill = document.getElementById('progressFill');
-      const pageInfo = document.getElementById('pageInfo');
-      const bookmarkBtn = document.getElementById('bookmarkBtn');
-      const bookmarkDot = document.getElementById('bookmarkDot');
-      const modeToggle = document.getElementById('modeToggle');
-      const fontIncrease = document.getElementById('fontIncrease');
-      const fontDecrease = document.getElementById('fontDecrease');
-      const fontButtons = document.querySelectorAll('.btn-font');
-      const toast = document.getElementById('toast');
+  .font-toggle-btn {
+    width: 48px;
+    height: 48px;
+    background: #1a1a1a;
+    border: 2px solid #444;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    padding: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: background 0.2s;
+  }
 
-      // Estado
-      let currentFontSize = 1.0; // en rem
-      let currentFontFamily = 'Georgia, serif';
-      let isDark = false;
-      let bookmarkPosition = null; // scrollTop guardado
-      let scrollPosition = 0;
-      let isBookmarkActive = false;
-      let toastTimeout = null;
+  .font-toggle-btn:hover {
+    background: #2a2a2a;
+  }
 
-      // Constantes
-      const STORAGE_KEY = 'lector_config';
-      const MIN_FONT = 0.7;
-      const MAX_FONT = 2.0;
-      const FONT_STEP = 0.08;
+  .font-toggle-btn span {
+    display: block;
+    width: 24px;
+    height: 2px;
+    background: #fff;
+    border-radius: 2px;
+    transition: all 0.3s;
+  }
 
-      // Cargar configuración guardada
-      function loadConfig() {
-        try {
-          const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
-          if (data) {
-            currentFontSize = data.fontSize || 1.0;
-            currentFontFamily = data.fontFamily || 'Georgia, serif';
-            isDark = data.darkMode || false;
-            bookmarkPosition = data.bookmark || null;
-            scrollPosition = data.scrollPos || 0;
-            return true;
-          }
-        } catch (e) {}
-        return false;
-      }
+  .font-toggle-btn.active span:nth-child(1) {
+    transform: rotate(45deg) translate(4px, 4px);
+  }
+  .font-toggle-btn.active span:nth-child(2) {
+    opacity: 0;
+  }
+  .font-toggle-btn.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(4px, -4px);
+  }
 
-      // Guardar configuración
-      function saveConfig() {
-        const data = {
-          fontSize: currentFontSize,
-          fontFamily: currentFontFamily,
-          darkMode: isDark,
-          bookmark: bookmarkPosition,
-          scrollPos: reader.scrollTop || 0
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      }
+  .font-panel {
+    display: none;
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    min-width: 200px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    color: #eee;
+  }
 
-      // Aplicar tema
-      function applyTheme() {
-        document.body.classList.toggle('dark', isDark);
-        modeToggle.textContent = isDark ? '☀️' : '🌙';
-        // Actualizar color de fondo de las barras (ya se maneja con CSS)
-      }
+  .font-panel.open {
+    display: block;
+  }
 
-      // Aplicar fuente y tamaño
-      function applyStyles() {
-        reader.style.fontSize = currentFontSize + 'rem';
-        reader.style.fontFamily = currentFontFamily;
-        // Resaltar botón de fuente activo
-        fontButtons.forEach(btn => {
-          const font = btn.dataset.font;
-          btn.classList.toggle('active-font', font === currentFontFamily);
-        });
-        updateProgress();
-      }
+  .font-option {
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
 
-      // Actualizar barra de progreso y página virtual
-      function updateProgress() {
-        const scrollTop = reader.scrollTop;
-        const scrollHeight = reader.scrollHeight;
-        const clientHeight = reader.clientHeight;
+  .font-option label {
+    min-width: 60px;
+    font-size: 14px;
+    color: #ccc;
+  }
 
-        if (scrollHeight <= clientHeight) {
-          progressFill.style.width = '100%';
-          pageInfo.textContent = 'Pág. 1 de 1';
-          return;
-        }
+  .font-option select {
+    background: #2a2a2a;
+    color: #eee;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 4px 8px;
+  }
 
-        const maxScroll = scrollHeight - clientHeight;
-        const percent = Math.min(100, (scrollTop / maxScroll) * 100);
-        progressFill.style.width = percent + '%';
+  .font-option input[type="range"] {
+    width: 100px;
+    accent-color: #e10600;
+  }
 
-        // Páginas virtuales (cada página = una pantalla llena)
-        const totalPages = Math.ceil(scrollHeight / clientHeight);
-        const currentPage = Math.min(totalPages, Math.floor(scrollTop / clientHeight) + 1);
-        pageInfo.textContent = `Pág. ${currentPage} de ${totalPages}`;
+  #sizeDisplay {
+    min-width: 40px;
+    text-align: center;
+    font-size: 14px;
+  }
+</style>
 
-        // Actualizar indicador de marcador en la barra de progreso
-        if (bookmarkPosition !== null && bookmarkPosition <= maxScroll) {
-          const bookmarkPercent = (bookmarkPosition / maxScroll) * 100;
-          bookmarkDot.style.left = `calc(${bookmarkPercent}% - 4px)`;
-          bookmarkDot.classList.add('visible');
-        } else {
-          bookmarkDot.classList.remove('visible');
-        }
-      }
+<script>
+  function toggleFontPanel() {
+    const panel = document.getElementById('fontPanel');
+    const btn = document.querySelector('.font-toggle-btn');
+    panel.classList.toggle('open');
+    btn.classList.toggle('active');
+  }
 
-      // Guardar posición de scroll (con throttle)
-      let saveTimeout = null;
-      function saveScrollPosition() {
-        if (saveTimeout) return;
-        saveTimeout = setTimeout(() => {
-          saveConfig();
-          saveTimeout = null;
-        }, 800);
-      }
+  function applyFont() {
+    const select = document.getElementById('fontSelect');
+    document.body.style.fontFamily = select.value;
+  }
 
-      // Mostrar toast
-      function showToast(message, duration = 2000) {
-        if (toastTimeout) {
-          clearTimeout(toastTimeout);
-          toast.classList.remove('show');
-        }
-        toast.textContent = message;
-        toast.classList.add('show');
-        toastTimeout = setTimeout(() => {
-          toast.classList.remove('show');
-          toastTimeout = null;
-        }, duration);
-      }
+  function applySize() {
+    const range = document.getElementById('sizeRange');
+    const display = document.getElementById('sizeDisplay');
+    const size = range.value + 'px';
+    display.textContent = size;
+    document.body.style.fontSize = size;
+  }
 
-      // Alternar marcador
-      function toggleBookmark() {
-        const currentScroll = reader.scrollTop;
-        if (bookmarkPosition === null || bookmarkPosition !== currentScroll) {
-          bookmarkPosition = currentScroll;
-          isBookmarkActive = true;
-          bookmarkBtn.classList.add('active');
-          bookmarkBtn.classList.add('pop');
-          setTimeout(() => bookmarkBtn.classList.remove('pop'), 400);
-          showToast('📌 Marcador guardado en esta página');
-        } else {
-          bookmarkPosition = null;
-          isBookmarkActive = false;
-          bookmarkBtn.classList.remove('active');
-          showToast('Marcador eliminado');
-        }
-        saveConfig();
-        updateProgress();
-      }
-
-      // Cargar texto desde libro.txt
-      async function loadBook() {
-        try {
-          const response = await fetch('libro.txt');
-          if (!response.ok) throw new Error('No se pudo cargar el libro');
-          const text = await response.text();
-          // Dividir en párrafos (por dos saltos de línea consecutivos)
-          const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim() !== '');
-          if (paragraphs.length === 0) {
-            reader.innerHTML = '<p><em>El libro está vacío.</em></p>';
-            return;
-          }
-          const html = paragraphs.map(p => `<p>${escapeHtml(p.trim())}</p>`).join('');
-          reader.innerHTML = html;
-          // Restaurar posición
-          if (scrollPosition > 0) {
-            reader.scrollTop = scrollPosition;
-          }
-          // Actualizar marcador
-          if (bookmarkPosition !== null) {
-            bookmarkBtn.classList.add('active');
-            isBookmarkActive = true;
-          }
-          applyStyles();
-          updateProgress();
-          // Guardar configuración después de cargar
-          saveConfig();
-        } catch (err) {
-          reader.innerHTML = `<p style="color: #b94a4a;"><strong>Error:</strong> ${err.message}</p>`;
-          console.error(err);
-        }
-      }
-
-      // Escapar HTML básico
-      function escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-      }
-
-      // Eventos de scroll
-      reader.addEventListener('scroll', () => {
-        updateProgress();
-        saveScrollPosition();
-      });
-
-      // Toggle de barras al tocar/click en el centro
-      reader.addEventListener('click', (e) => {
-        // Ignorar si se hizo clic en un botón o elemento interactivo dentro del reader? 
-        // pero los botones no están dentro del reader, así que es seguro
-        toggleBars();
-      });
-
-      // También para móviles con touch
-      reader.addEventListener('touchstart', (e) => {
-        // Para evitar que se dispare dos veces, solo si no hay un toque en un enlace o similar
-        // Simplemente toggle
-        toggleBars();
-      }, { passive: true });
-
-      let barsVisible = true;
-      function toggleBars() {
-        barsVisible = !barsVisible;
-        topBar.classList.toggle('hidden', !barsVisible);
-        bottomBar.classList.toggle('hidden', !barsVisible);
-      }
-
-      // Cambiar tamaño de fuente
-      function changeFontSize(delta) {
-        let newSize = currentFontSize + delta;
-        newSize = Math.min(MAX_FONT, Math.max(MIN_FONT, newSize));
-        if (newSize !== currentFontSize) {
-          currentFontSize = newSize;
-          applyStyles();
-          saveConfig();
-          // Actualizar progreso porque cambia el número de páginas
-          updateProgress();
-        }
-      }
-
-      // Cambiar fuente
-      function setFontFamily(font) {
-        if (font !== currentFontFamily) {
-          currentFontFamily = font;
-          applyStyles();
-          saveConfig();
-          // Actualizar progreso
-          updateProgress();
-        }
-      }
-
-      // Alternar modo
-      function toggleMode() {
-        isDark = !isDark;
-        applyTheme();
-        saveConfig();
-      }
-
-      // Inicializar eventos
-      function init() {
-        // Cargar configuración
-        loadConfig();
-
-        // Aplicar tema y estilos iniciales
-        applyTheme();
-        applyStyles();
-
-        // Cargar libro
-        loadBook();
-
-        // Eventos de botones
-        fontIncrease.addEventListener('click', () => changeFontSize(FONT_STEP));
-        fontDecrease.addEventListener('click', () => changeFontSize(-FONT_STEP));
-
-        fontButtons.forEach(btn => {
-          btn.addEventListener('click', () => {
-            setFontFamily(btn.dataset.font);
-          });
-        });
-
-        bookmarkBtn.addEventListener('click', toggleBookmark);
-
-        modeToggle.addEventListener('click', toggleMode);
-
-        // Guardar configuración al cerrar (por si acaso)
-        window.addEventListener('beforeunload', () => {
-          saveConfig();
-        });
-
-        // Recalcular progreso al cambiar tamaño de ventana (orientación)
-        let resizeTimer;
-        window.addEventListener('resize', () => {
-          clearTimeout(resizeTimer);
-          resizeTimer = setTimeout(() => {
-            updateProgress();
-          }, 300);
-        });
-
-        // Mostrar inicialmente las barras
-        barsVisible = true;
-        topBar.classList.remove('hidden');
-        bottomBar.classList.remove('hidden');
-
-        // Si hay marcador, mostrar indicador en la barra
-        if (bookmarkPosition !== null) {
-          bookmarkBtn.classList.add('active');
-          isBookmarkActive = true;
-        }
-      }
-
-      // Iniciar cuando el DOM esté listo
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-      } else {
-        init();
-      }
-
-    })();
-  </script>
-</body>
-</html>
+  // Cerrar panel si se hace clic fuera
+  document.addEventListener('click', function(e) {
+    const container = document.querySelector('.font-control-container');
+    if (!container.contains(e.target)) {
+      document.getElementById('fontPanel').classList.remove('open');
+      document.querySelector('.font-toggle-btn').classList.remove('active');
+    }
+  });
+</script>
