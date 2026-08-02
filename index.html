@@ -274,6 +274,25 @@
             border-radius: 4px;
             font-size: 0.85em;
         }
+        #loader .file-input-wrap {
+            margin-top: 10px;
+        }
+        #loader .file-input-wrap label {
+            display: inline-block;
+            background: #c9a96e;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #loader .file-input-wrap label:hover {
+            background: #b08a4e;
+        }
+        #loader .file-input-wrap input[type="file"] {
+            display: none;
+        }
         #app.dark-mode #loader .hint {
             background: rgba(255,255,255,0.08);
             color: #b0a898;
@@ -304,6 +323,10 @@
         <div class="spinner" id="loader-spinner"></div>
         <p id="loader-message">Cargando Al Final De Los Caminos...</p>
         <div id="loader-hint" class="hint" style="display:none;"></div>
+        <div class="file-input-wrap">
+            <label for="file-input">📂 O cargar otro EPUB</label>
+            <input type="file" id="file-input" accept=".epub">
+        </div>
     </div>
 
     <div id="bookmark-dot"></div>
@@ -352,6 +375,7 @@
         const fontSizeLabel = document.getElementById('font-size-label');
         const topBar = document.getElementById('top-bar');
         const bottomBar = document.getElementById('bottom-bar');
+        const fileInput = document.getElementById('file-input');
 
         // ============================
         //  ESTADO
@@ -392,11 +416,12 @@
             const params = new URLSearchParams(window.location.search);
             const param = params.get('book');
             if (param) return param;
-            // CAMBIA ESTA LÍNEA si quieres otro nombre por defecto
+            // Por defecto, 'libro.epub' en la misma carpeta
             return 'libro.epub';
         }
 
-        const bookUrl = getBookName();
+        let bookUrl = getBookName();
+        console.log('📖 Buscando EPUB:', bookUrl);
 
         // ============================
         //  FUNCIÓN PARA MOSTRAR ERROR
@@ -410,96 +435,132 @@
                 loaderHint.style.display = 'none';
             }
             loaderSpinner.style.display = 'none';
+            console.error('❌ Error:', msg);
+        }
+
+        function clearError() {
+            loaderMsg.innerHTML = 'Cargando libro...';
+            loaderHint.style.display = 'none';
+            loaderSpinner.style.display = 'block';
         }
 
         // ============================
         //  INICIALIZAR EPUB.JS
         // ============================
-        const book = ePub(bookUrl, {
-            styles: {
+        let book, rendition;
+        let locationsGenerated = false;
+
+        function initReader(epubUrl) {
+            // Limpiar estado anterior
+            if (book) {
+                try { book.destroy(); } catch (_) {}
+            }
+            clearError();
+            loader.classList.remove('hidden');
+            locationsGenerated = false;
+            state.bookReady = false;
+
+            book = ePub(epubUrl, {
+                styles: {
+                    body: {
+                        'font-family': "'Literata', 'Georgia', serif",
+                        'line-height': '1.8',
+                        'letter-spacing': '0.02em',
+                        'padding': '0 !important',
+                        'margin': '0 !important',
+                        'color': '#2c2c2c',
+                        'background': 'transparent !important',
+                    },
+                    p: { 'margin-bottom': '0.6em' }
+                }
+            });
+
+            rendition = book.renderTo('viewer', {
+                width: '100%',
+                height: '100%',
+                flow: 'scrolled',
+                spread: 'none',
+                ignoreClass: 'epubjs-ignore',
+            });
+
+            rendition.themes.register('custom', {
                 body: {
                     'font-family': "'Literata', 'Georgia', serif",
                     'line-height': '1.8',
                     'letter-spacing': '0.02em',
-                    'padding': '0 !important',
-                    'margin': '0 !important',
                     'color': '#2c2c2c',
                     'background': 'transparent !important',
-                },
-                p: { 'margin-bottom': '0.6em' }
-            }
-        });
-
-        const rendition = book.renderTo('viewer', {
-            width: '100%',
-            height: '100%',
-            flow: 'scrolled',
-            spread: 'none',
-            ignoreClass: 'epubjs-ignore',
-        });
-
-        rendition.themes.register('custom', {
-            body: {
-                'font-family': "'Literata', 'Georgia', serif",
-                'line-height': '1.8',
-                'letter-spacing': '0.02em',
-                'color': '#2c2c2c',
-                'background': 'transparent !important',
-            }
-        });
-        rendition.themes.select('custom');
-        rendition.themes.fontSize(state.fontSize + 'em');
-
-        let locationsGenerated = false;
-
-        // ============================
-        //  CARGAR LIBRO
-        // ============================
-        book.ready
-            .then(() => book.locations.generate(750))
-            .then(() => {
-                locationsGenerated = true;
-                state.totalPages = book.locations.total || 1;
-                updatePageCounter();
-                return rendition.display();
-            })
-            .then(() => {
-                loader.classList.add('hidden');
-                state.bookReady = true;
-
-                if (state.bookmarkCfi) {
-                    try {
-                        rendition.display(state.bookmarkCfi);
-                    } catch (_) {}
                 }
-                updateBookmarkUI();
+            });
+            rendition.themes.select('custom');
+            rendition.themes.fontSize(state.fontSize + 'em');
 
-                rendition.on('relocated', (location) => {
-                    if (!location || !location.start) return;
-                    state.currentCfi = location.start.cfi;
-                    if (locationsGenerated) {
-                        const page = book.locations.locationFromCfi(state.currentCfi);
-                        state.currentPage = (page !== undefined && page !== null) ? page + 1 : 0;
-                        updatePageCounter();
+            // ============================
+            //  CARGAR LIBRO CON MANEJO DE ERRORES MEJORADO
+            // ============================
+            book.ready
+                .then(() => {
+                    console.log('✅ EPUB listo. Generando ubicaciones...');
+                    return book.locations.generate(750);
+                })
+                .then(() => {
+                    console.log('✅ Ubicaciones generadas correctamente.');
+                    locationsGenerated = true;
+                    state.totalPages = book.locations.total || 1;
+                    updatePageCounter();
+                    console.log(`📄 Páginas virtuales: ${state.totalPages}`);
+                    return rendition.display();
+                })
+                .then(() => {
+                    console.log('🎉 Libro renderizado con éxito.');
+                    loader.classList.add('hidden');
+                    state.bookReady = true;
+
+                    if (state.bookmarkCfi) {
+                        try {
+                            rendition.display(state.bookmarkCfi);
+                        } catch (_) {}
                     }
                     updateBookmarkUI();
+
+                    rendition.on('relocated', (location) => {
+                        if (!location || !location.start) return;
+                        state.currentCfi = location.start.cfi;
+                        if (locationsGenerated) {
+                            const page = book.locations.locationFromCfi(state.currentCfi);
+                            state.currentPage = (page !== undefined && page !== null) ? page + 1 : 0;
+                            updatePageCounter();
+                        }
+                        updateBookmarkUI();
+                    });
+                })
+                .catch((err) => {
+                    console.error('❌ ERROR DETALLADO:', err);
+                    let errorMsg = err.message || 'Error desconocido';
+                    let hint = '';
+
+                    if (errorMsg.includes('manifest')) {
+                        errorMsg = 'El archivo EPUB no tiene un manifiesto válido.';
+                        hint = '💡 Prueba a validar el archivo con <a href="https://www.w3.org/publishing/epubcheck/" target="_blank">EPUB Validator</a> o conviértelo de nuevo con Calibre.';
+                    } else if (errorMsg.includes('spine')) {
+                        errorMsg = 'El archivo EPUB tiene problemas en la estructura "spine".';
+                        hint = '💡 Prueba a convertir el archivo de nuevo con Calibre o valídelo con EPUB Validator.';
+                    } else if (errorMsg.includes('Failed to fetch')) {
+                        errorMsg = 'No se pudo descargar el archivo.';
+                        hint = `💡 Asegúrate de que el archivo se llame <code>libro.epub</code> y esté en la misma carpeta.<br>O usa el botón "Cargar otro EPUB" para seleccionarlo manualmente.`;
+                    } else if (errorMsg.includes('Error: EPUB parsing')) {
+                        errorMsg = 'Error al parsear el EPUB. El archivo puede estar corrupto.';
+                        hint = '💡 Intenta abrirlo con Calibre y volver a guardarlo como EPUB, o usa "Cargar otro EPUB" para probar con otro archivo.';
+                    } else {
+                        hint = '💡 Puedes intentar cargar otro archivo usando el botón "Cargar otro EPUB" que aparece abajo.';
+                    }
+
+                    showError(`Error al procesar el EPUB: ${errorMsg}`, hint);
                 });
-            })
-            .catch((err) => {
-                console.error('Error cargando EPUB:', err);
-                let hint = '';
-                if (bookUrl === 'libro.epub') {
-                    hint = `💡 <strong>Recomendación:</strong> Renombra tu archivo EPUB a <code>libro.epub</code> (todo minúscula, sin espacios).<br>
-                            O usa el parámetro en la URL: <code>?book=nombre.epub</code>`;
-                } else {
-                    hint = `💡 Asegúrate de que el archivo <code>${bookUrl}</code> esté en la misma carpeta.<br>
-                            O usa el parámetro en la URL: <code>?book=nombre.epub</code>`;
-                }
-                showError(`No se pudo cargar el archivo "${bookUrl}".`, hint);
-            });
+        }
 
         // ============================
-        //  FUNCIONES UI
+        //  FUNCIONES UI (sin cambios)
         // ============================
         function updatePageCounter() {
             const current = Math.min(state.currentPage, state.totalPages);
@@ -542,6 +603,7 @@
         }
 
         function changeFontSize(delta) {
+            if (!rendition) return;
             const newSize = Math.min(2.0, Math.max(0.7, state.fontSize + delta));
             if (newSize === state.fontSize) return;
             state.fontSize = newSize;
@@ -549,7 +611,7 @@
             rendition.themes.fontSize(state.fontSize + 'em');
             saveState();
 
-            if (locationsGenerated) {
+            if (locationsGenerated && book) {
                 book.locations.generate(750).then(() => {
                     state.totalPages = book.locations.total || 1;
                     if (state.currentCfi) {
@@ -572,7 +634,21 @@
         }
 
         // ============================
-        //  EVENTOS
+        //  EVENTOS DE CARGA MANUAL
+        // ============================
+        fileInput.addEventListener('change', function(e) {
+            const file = this.files[0];
+            if (!file) return;
+            const url = URL.createObjectURL(file);
+            bookUrl = file.name;
+            console.log('📂 Cargando archivo seleccionado:', file.name);
+            initReader(url);
+            // Limpiar input para poder seleccionar el mismo archivo de nuevo
+            this.value = '';
+        });
+
+        // ============================
+        //  EVENTOS DE UI
         // ============================
         let barsTimeout = null;
         viewer.addEventListener('click', (e) => {
@@ -618,7 +694,7 @@
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
-                if (locationsGenerated && state.bookReady) {
+                if (locationsGenerated && state.bookReady && book) {
                     book.locations.generate(750).then(() => {
                         state.totalPages = book.locations.total || 1;
                         if (state.currentCfi) {
@@ -632,17 +708,13 @@
         });
 
         fontSizeLabel.textContent = state.fontSize.toFixed(1);
-        if (state.bookmarkCfi) {
-            setTimeout(() => {
-                if (state.bookReady) {
-                    try {
-                        rendition.display(state.bookmarkCfi);
-                    } catch (_) {}
-                }
-            }, 500);
-        }
 
-        console.log(`📖 Lector cargado. Buscando: "${bookUrl}"`);
+        // ============================
+        //  INICIAR LECTOR
+        // ============================
+        initReader(bookUrl);
+
+        console.log('📖 Lector inicializado correctamente.');
     })();
 </script>
 </body>
