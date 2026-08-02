@@ -1,151 +1,836 @@
-<!-- HTML -->
-<div class="font-control-container">
-  <button class="font-toggle-btn" onclick="toggleFontPanel()">
-    <span></span>
-    <span></span>
-    <span></span>
-  </button>
-  <div class="font-panel" id="fontPanel">
-    <div class="font-option">
-      <label>Fuente:</label>
-      <select id="fontSelect" onchange="applyFont()">
-        <option value="serif">Serif</option>
-        <option value="sans-serif">Sans-serif</option>
-        <option value="monospace">Mono</option>
-      </select>
-    </div>
-    <div class="font-option">
-      <label>Tamaño:</label>
-      <input type="range" id="sizeRange" min="12" max="24" value="16" oninput="applySize()">
-      <span id="sizeDisplay">16px</span>
-    </div>
-  </div>
-</div>
-
-<style>
-  .font-control-container {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 9999;
-  }
-
-  .font-toggle-btn {
-    width: 48px;
-    height: 48px;
-    background: #1a1a1a;
-    border: 2px solid #444;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 5px;
-    padding: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    transition: background 0.2s;
-  }
-
-  .font-toggle-btn:hover {
-    background: #2a2a2a;
-  }
-
-  .font-toggle-btn span {
-    display: block;
-    width: 24px;
-    height: 2px;
-    background: #fff;
-    border-radius: 2px;
-    transition: all 0.3s;
-  }
-
-  .font-toggle-btn.active span:nth-child(1) {
-    transform: rotate(45deg) translate(4px, 4px);
-  }
-  .font-toggle-btn.active span:nth-child(2) {
-    opacity: 0;
-  }
-  .font-toggle-btn.active span:nth-child(3) {
-    transform: rotate(-45deg) translate(4px, -4px);
-  }
-
-  .font-panel {
-    display: none;
-    background: #1a1a1a;
-    border: 1px solid #444;
-    border-radius: 8px;
-    padding: 16px 20px;
-    margin-bottom: 10px;
-    min-width: 200px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-    color: #eee;
-  }
-
-  .font-panel.open {
-    display: block;
-  }
-
-  .font-option {
-    margin: 8px 0;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .font-option label {
-    min-width: 60px;
-    font-size: 14px;
-    color: #ccc;
-  }
-
-  .font-option select {
-    background: #2a2a2a;
-    color: #eee;
-    border: 1px solid #555;
-    border-radius: 4px;
-    padding: 4px 8px;
-  }
-
-  .font-option input[type="range"] {
-    width: 100px;
-    accent-color: #e10600;
-  }
-
-  #sizeDisplay {
-    min-width: 40px;
-    text-align: center;
-    font-size: 14px;
-  }
-</style>
-
-<script>
-  function toggleFontPanel() {
-    const panel = document.getElementById('fontPanel');
-    const btn = document.querySelector('.font-toggle-btn');
-    panel.classList.toggle('open');
-    btn.classList.toggle('active');
-  }
-
-  function applyFont() {
-    const select = document.getElementById('fontSelect');
-    document.body.style.fontFamily = select.value;
-  }
-
-  function applySize() {
-    const range = document.getElementById('sizeRange');
-    const display = document.getElementById('sizeDisplay');
-    const size = range.value + 'px';
-    display.textContent = size;
-    document.body.style.fontSize = size;
-  }
-
-  // Cerrar panel si se hace clic fuera
-  document.addEventListener('click', function(e) {
-    const container = document.querySelector('.font-control-container');
-    if (!container.contains(e.target)) {
-      document.getElementById('fontPanel').classList.remove('open');
-      document.querySelector('.font-toggle-btn').classList.remove('active');
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Lector Ágil</title>
+  <style>
+    /* Reset y variables */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
     }
-  });
-</script>
+
+    :root {
+      --bg: #f7f3ee;
+      --text: #2c2c2c;
+      --bar-bg: rgba(247, 243, 238, 0.92);
+      --border: rgba(0,0,0,0.06);
+      --shadow: 0 2px 12px rgba(0,0,0,0.06);
+      --accent: #b8956a;
+      --accent-light: rgba(184, 149, 106, 0.2);
+      --radius: 12px;
+      --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Georgia', serif;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    body.sepia {
+      --bg: #f6edd8;
+      --text: #3d352a;
+      --bar-bg: rgba(246, 237, 216, 0.92);
+      --border: rgba(61, 53, 42, 0.08);
+    }
+
+    body.dark {
+      --bg: #18181c;
+      --text: #d6d2cb;
+      --bar-bg: rgba(24, 24, 28, 0.92);
+      --border: rgba(255,255,255,0.06);
+      --accent: #c9a96e;
+      --accent-light: rgba(201, 169, 110, 0.15);
+    }
+
+    #app {
+      width: 100%;
+      max-width: 700px;
+      height: 100vh;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      transition: background var(--transition);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 40px rgba(0,0,0,0.04);
+    }
+
+    /* Área de lectura */
+    #reader {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px 24px 24px;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      background: var(--bg);
+      transition: background var(--transition);
+      line-height: 1.8;
+      letter-spacing: 0.01em;
+      word-break: break-word;
+    }
+
+    #reader p {
+      margin: 0 0 1.4em 0;
+      text-align: justify;
+      font-size: 1rem;
+      transition: font-size 0.25s ease;
+    }
+
+    /* Barra superior (con menú y título) */
+    #top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: var(--bar-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      transition: background var(--transition), transform var(--transition), opacity var(--transition);
+      z-index: 20;
+      flex-shrink: 0;
+    }
+
+    #top-bar.hidden {
+      transform: translateY(-100%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .menu-btn {
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 1.6rem;
+      padding: 4px 8px;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: background 0.2s;
+      line-height: 1;
+    }
+    .menu-btn:hover {
+      background: var(--accent-light);
+    }
+
+    .title {
+      font-size: 0.85rem;
+      opacity: 0.6;
+      letter-spacing: 0.04em;
+      font-weight: 400;
+    }
+
+    /* Barra inferior de progreso */
+    #bottom-bar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 8px 16px;
+      background: var(--bar-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      transition: background var(--transition), transform var(--transition), opacity var(--transition);
+      flex-shrink: 0;
+      z-index: 20;
+    }
+
+    #bottom-bar.hidden {
+      transform: translateY(100%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .progress-track {
+      flex: 1;
+      height: 3px;
+      background: var(--border);
+      border-radius: 4px;
+      position: relative;
+      overflow: visible;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      border-radius: 4px;
+      transition: width 0.15s ease;
+    }
+
+    .bookmark-dot {
+      position: absolute;
+      top: -4px;
+      width: 10px;
+      height: 10px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 12px rgba(184, 149, 106, 0.4);
+      opacity: 0;
+      transform: scale(0.6);
+      transition: opacity 0.3s, transform 0.3s;
+      pointer-events: none;
+    }
+    .bookmark-dot.visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .page-info {
+      font-size: 0.7rem;
+      opacity: 0.6;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      min-width: 60px;
+      text-align: right;
+    }
+
+    /* Panel lateral (menú) */
+    .menu-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.3);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition);
+    }
+    .menu-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .menu-panel {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 300px;
+      max-width: 80vw;
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      box-shadow: 4px 0 30px rgba(0,0,0,0.15);
+      transform: translateX(-100%);
+      transition: transform var(--transition), background var(--transition);
+      z-index: 101;
+      padding: 24px 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .menu-panel.open {
+      transform: translateX(0);
+    }
+
+    .menu-panel h2 {
+      font-size: 1.1rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      opacity: 0.7;
+      margin: 0 0 4px 0;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+
+    .menu-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .menu-section label {
+      font-size: 0.8rem;
+      opacity: 0.6;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .font-size-control {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .font-size-control button {
+      background: var(--border);
+      border: none;
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .font-size-control button:active {
+      transform: scale(0.92);
+    }
+    .font-size-control span {
+      min-width: 40px;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+
+    .font-family-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .font-family-group button {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex: 1 0 auto;
+    }
+    .font-family-group button.active {
+      border-color: var(--accent);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .theme-group {
+      display: flex;
+      gap: 8px;
+    }
+    .theme-group button {
+      flex: 1;
+      padding: 8px 0;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text);
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .theme-group button.active {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+    .theme-group button .preview {
+      display: block;
+      height: 18px;
+      border-radius: 4px;
+      margin: 4px auto 2px;
+      width: 60%;
+    }
+    .theme-group button[data-theme="light"] .preview { background: #f7f3ee; border:1px solid #ddd; }
+    .theme-group button[data-theme="sepia"] .preview { background: #f6edd8; border:1px solid #d4c9b0; }
+    .theme-group button[data-theme="dark"] .preview { background: #18181c; border:1px solid #444; }
+
+    .bookmark-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .bookmark-actions button {
+      flex: 1;
+      padding: 10px 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .bookmark-actions button:active {
+      transform: scale(0.96);
+    }
+    .bookmark-actions .save-bookmark {
+      border-color: var(--accent);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .close-menu {
+      margin-top: auto;
+      padding: 12px;
+      border: none;
+      background: var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .close-menu:active {
+      background: var(--accent-light);
+    }
+
+    /* Toast (notificaciones) */
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(0,0,0,0.78);
+      color: #fff;
+      padding: 10px 24px;
+      border-radius: 30px;
+      font-size: 0.9rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+      z-index: 200;
+      backdrop-filter: blur(4px);
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Scrollbar personalizada */
+    #reader::-webkit-scrollbar {
+      width: 4px;
+    }
+    #reader::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    #reader::-webkit-scrollbar-thumb {
+      background: var(--accent);
+      border-radius: 8px;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      #reader { padding: 16px 18px; }
+      .menu-panel { width: 260px; padding: 20px 16px; }
+      .font-family-group button { font-size: 0.7rem; padding: 4px 10px; }
+      .title { font-size: 0.7rem; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Barra superior -->
+    <header id="top-bar">
+      <button class="menu-btn" id="menuToggle" aria-label="Menú">☰</button>
+      <span class="title">Lector Ágil</span>
+      <span style="width:40px;"></span> <!-- spacer -->
+    </header>
+
+    <!-- Área de lectura -->
+    <main id="reader"></main>
+
+    <!-- Barra inferior -->
+    <footer id="bottom-bar">
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+        <span class="bookmark-dot" id="bookmarkDot"></span>
+      </div>
+      <span class="page-info" id="pageInfo">Pág. 1</span>
+    </footer>
+  </div>
+
+  <!-- Overlay y panel del menú -->
+  <div class="menu-overlay" id="menuOverlay"></div>
+  <aside class="menu-panel" id="menuPanel">
+    <h2>Configuración</h2>
+
+    <div class="menu-section">
+      <label>Tamaño de fuente</label>
+      <div class="font-size-control">
+        <button id="fontDec">−</button>
+        <span id="fontSizeDisplay">1.0</span>
+        <button id="fontInc">+</button>
+      </div>
+    </div>
+
+    <div class="menu-section">
+      <label>Tipo de fuente</label>
+      <div class="font-family-group" id="fontFamilyGroup">
+        <button data-font="Georgia, serif">Georgia</button>
+        <button data-font="'Times New Roman', serif">Times</button>
+        <button data-font="Arial, sans-serif">Arial</button>
+        <button data-font="Verdana, sans-serif">Verdana</button>
+        <button data-font="'Palatino Linotype', 'Book Antiqua', serif">Palatino</button>
+      </div>
+    </div>
+
+    <div class="menu-section">
+      <label>Tema de lectura</label>
+      <div class="theme-group" id="themeGroup">
+        <button data-theme="light">Claro <span class="preview"></span></button>
+        <button data-theme="sepia">Sepia <span class="preview"></span></button>
+        <button data-theme="dark">Oscuro <span class="preview"></span></button>
+      </div>
+    </div>
+
+    <div class="menu-section">
+      <label>Marcador</label>
+      <div class="bookmark-actions">
+        <button class="save-bookmark" id="saveBookmark">📌 Guardar</button>
+        <button id="goToBookmark">📍 Ir</button>
+      </div>
+    </div>
+
+    <button class="close-menu" id="closeMenu">Cerrar</button>
+  </aside>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      // ---------- DOM refs ----------
+      const reader = document.getElementById('reader');
+      const topBar = document.getElementById('top-bar');
+      const bottomBar = document.getElementById('bottom-bar');
+      const progressFill = document.getElementById('progressFill');
+      const pageInfo = document.getElementById('pageInfo');
+      const bookmarkDot = document.getElementById('bookmarkDot');
+
+      const menuToggle = document.getElementById('menuToggle');
+      const menuOverlay = document.getElementById('menuOverlay');
+      const menuPanel = document.getElementById('menuPanel');
+      const closeMenu = document.getElementById('closeMenu');
+
+      const fontDec = document.getElementById('fontDec');
+      const fontInc = document.getElementById('fontInc');
+      const fontSizeDisplay = document.getElementById('fontSizeDisplay');
+      const fontFamilyGroup = document.getElementById('fontFamilyGroup');
+      const themeGroup = document.getElementById('themeGroup');
+      const saveBookmarkBtn = document.getElementById('saveBookmark');
+      const goToBookmarkBtn = document.getElementById('goToBookmark');
+      const toast = document.getElementById('toast');
+
+      // ---------- Estado ----------
+      const state = {
+        fontSize: 1.0,          // en rem
+        fontFamily: 'Georgia, serif',
+        theme: 'light',         // 'light' | 'sepia' | 'dark'
+        bookmark: null,         // porcentaje (0-1) o null
+        scrollPercent: 0,       // última posición guardada (0-1)
+        totalPages: 1,
+        currentPage: 1,
+        menuOpen: false,
+        barsVisible: true,
+      };
+
+      // Constantes
+      const MIN_FONT = 0.7;
+      const MAX_FONT = 2.0;
+      const FONT_STEP = 0.08;
+      const STORAGE_KEY = 'lector_agile_config';
+
+      // ---------- Persistencia ----------
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return false;
+          const saved = JSON.parse(raw);
+          if (saved.fontSize) state.fontSize = Math.min(MAX_FONT, Math.max(MIN_FONT, saved.fontSize));
+          if (saved.fontFamily) state.fontFamily = saved.fontFamily;
+          if (saved.theme) state.theme = saved.theme;
+          if (saved.bookmark !== undefined) state.bookmark = saved.bookmark;
+          if (saved.scrollPercent !== undefined) state.scrollPercent = saved.scrollPercent;
+          return true;
+        } catch (e) { return false; }
+      }
+
+      function saveState() {
+        const data = {
+          fontSize: state.fontSize,
+          fontFamily: state.fontFamily,
+          theme: state.theme,
+          bookmark: state.bookmark,
+          scrollPercent: state.scrollPercent,
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      }
+
+      // ---------- Temas ----------
+      function applyTheme(theme) {
+        document.body.className = theme === 'light' ? '' : theme;
+        state.theme = theme;
+        // Resaltar botón activo en el menú
+        document.querySelectorAll('#themeGroup button').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.theme === theme);
+        });
+        saveState();
+      }
+
+      // ---------- Fuentes y tamaño ----------
+      function applyFontSize(size) {
+        state.fontSize = Math.min(MAX_FONT, Math.max(MIN_FONT, size));
+        reader.style.fontSize = state.fontSize + 'rem';
+        fontSizeDisplay.textContent = state.fontSize.toFixed(1);
+        saveState();
+        // Recalcular páginas después de cambio de tamaño
+        requestAnimationFrame(() => updateProgress());
+      }
+
+      function applyFontFamily(family) {
+        state.fontFamily = family;
+        reader.style.fontFamily = family;
+        document.querySelectorAll('#fontFamilyGroup button').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.font === family);
+        });
+        saveState();
+        // Recalcular
+        requestAnimationFrame(() => updateProgress());
+      }
+
+      // ---------- Progreso y páginas ----------
+      function updateProgress() {
+        const scrollTop = reader.scrollTop;
+        const scrollHeight = reader.scrollHeight;
+        const clientHeight = reader.clientHeight;
+
+        if (scrollHeight <= clientHeight) {
+          progressFill.style.width = '100%';
+          state.currentPage = 1;
+          state.totalPages = 1;
+          pageInfo.textContent = 'Pág. 1';
+          return;
+        }
+
+        const maxScroll = scrollHeight - clientHeight;
+        const percent = Math.min(1, scrollTop / maxScroll);
+        progressFill.style.width = (percent * 100) + '%';
+
+        state.totalPages = Math.ceil(scrollHeight / clientHeight);
+        state.currentPage = Math.min(state.totalPages, Math.floor(scrollTop / clientHeight) + 1);
+        pageInfo.textContent = `Pág. ${state.currentPage} de ${state.totalPages}`;
+
+        // Actualizar posición del punto de marcador
+        if (state.bookmark !== null) {
+          const bmPercent = Math.min(1, Math.max(0, state.bookmark));
+          bookmarkDot.style.left = `calc(${bmPercent * 100}% - 4px)`;
+          bookmarkDot.classList.add('visible');
+        } else {
+          bookmarkDot.classList.remove('visible');
+        }
+
+        // Guardar porcentaje de scroll (con throttle)
+        state.scrollPercent = percent;
+        saveState();
+      }
+
+      // Throttle para el scroll
+      let scrollSaveTimer = null;
+      function handleScroll() {
+        updateProgress();
+        if (scrollSaveTimer) clearTimeout(scrollSaveTimer);
+        scrollSaveTimer = setTimeout(() => {
+          saveState();
+          scrollSaveTimer = null;
+        }, 400);
+      }
+
+      // ---------- Restaurar posición (por porcentaje) ----------
+      function restoreScrollPosition() {
+        if (state.scrollPercent !== undefined && state.scrollPercent > 0) {
+          const maxScroll = reader.scrollHeight - reader.clientHeight;
+          const target = state.scrollPercent * maxScroll;
+          reader.scrollTop = target;
+        }
+        // Restaurar marcador visual
+        updateProgress();
+      }
+
+      // ---------- Marcador ----------
+      function saveBookmark() {
+        const scrollTop = reader.scrollTop;
+        const scrollHeight = reader.scrollHeight;
+        const clientHeight = reader.clientHeight;
+        if (scrollHeight <= clientHeight) {
+          showToast('No hay suficiente texto para marcar');
+          return;
+        }
+        const maxScroll = scrollHeight - clientHeight;
+        state.bookmark = Math.min(1, scrollTop / maxScroll);
+        saveState();
+        updateProgress();
+        showToast('📌 Marcador guardado');
+      }
+
+      function goToBookmark() {
+        if (state.bookmark === null) {
+          showToast('No hay marcador guardado');
+          return;
+        }
+        const maxScroll = reader.scrollHeight - reader.clientHeight;
+        const target = state.bookmark * maxScroll;
+        reader.scrollTo({ top: target, behavior: 'smooth' });
+        showToast('📍 Yendo al marcador');
+      }
+
+      // ---------- Cargar libro ----------
+      async function loadBook() {
+        try {
+          const resp = await fetch('libro.txt');
+          if (!resp.ok) throw new Error('No se pudo cargar el libro');
+          const text = await resp.text();
+          const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim() !== '');
+          if (paragraphs.length === 0) {
+            reader.innerHTML = '<p><em>El libro está vacío.</em></p>';
+            return;
+          }
+          const html = paragraphs.map(p => `<p>${escapeHtml(p.trim())}</p>`).join('');
+          reader.innerHTML = html;
+
+          // Aplicar estilos guardados
+          applyFontSize(state.fontSize);
+          applyFontFamily(state.fontFamily);
+          applyTheme(state.theme);
+
+          // Esperar a que el contenido se renderice y luego restaurar posición
+          requestAnimationFrame(() => {
+            // Forzar reflow
+            void reader.offsetHeight;
+            restoreScrollPosition();
+          });
+
+          // Guardar estado inicial
+          saveState();
+        } catch (err) {
+          reader.innerHTML = `<p style="color: #b44;"><strong>Error:</strong> ${err.message}</p>`;
+          console.error(err);
+        }
+      }
+
+      function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      // ---------- Menú ----------
+      function toggleMenu(open) {
+        state.menuOpen = (open !== undefined) ? open : !state.menuOpen;
+        menuPanel.classList.toggle('open', state.menuOpen);
+        menuOverlay.classList.toggle('open', state.menuOpen);
+        document.body.style.overflow = state.menuOpen ? 'hidden' : '';
+      }
+
+      // ---------- Toast ----------
+      let toastTimer = null;
+      function showToast(msg, duration = 2000) {
+        if (toastTimer) {
+          clearTimeout(toastTimer);
+          toast.classList.remove('show');
+        }
+        toast.textContent = msg;
+        toast.classList.add('show');
+        toastTimer = setTimeout(() => {
+          toast.classList.remove('show');
+          toastTimer = null;
+        }, duration);
+      }
+
+      // ---------- Ocultar/mostrar barras (toque en el centro) ----------
+      function toggleBars() {
+        state.barsVisible = !state.barsVisible;
+        topBar.classList.toggle('hidden', !state.barsVisible);
+        bottomBar.classList.toggle('hidden', !state.barsVisible);
+      }
+
+      // ---------- Eventos ----------
+      // Scroll
+      reader.addEventListener('scroll', handleScroll, { passive: true });
+
+      // Toque en el área de lectura para ocultar barras (solo si no hay selección de texto)
+      reader.addEventListener('click', (e) => {
+        // Ignorar si se hizo clic en un enlace o elemento interactivo (no hay)
+        toggleBars();
+      });
+
+      // Menú
+      menuToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleMenu();
+      });
+      menuOverlay.addEventListener('click', () => toggleMenu(false));
+      closeMenu.addEventListener('click', () => toggleMenu(false));
+
+      // Tamaño de fuente
+      fontDec.addEventListener('click', () => applyFontSize(state.fontSize - FONT_STEP));
+      fontInc.addEventListener('click', () => applyFontSize(state.fontSize + FONT_STEP));
+
+      // Fuentes
+      fontFamilyGroup.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        applyFontFamily(btn.dataset.font);
+      });
+
+      // Temas
+      themeGroup.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        applyTheme(btn.dataset.theme);
+      });
+
+      // Marcador
+      saveBookmarkBtn.addEventListener('click', saveBookmark);
+      goToBookmarkBtn.addEventListener('click', goToBookmark);
+
+      // Recalcular al cambiar orientación
+      let resizeTimer;
+      window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          updateProgress();
+        }, 300);
+      });
+
+      // Guardar estado al cerrar
+      window.addEventListener('beforeunload', () => saveState());
+
+      // ---------- Inicio ----------
+      function init() {
+        loadState();
+        // Aplicar estilos iniciales (sin texto aún)
+        document.body.className = state.theme === 'light' ? '' : state.theme;
+        reader.style.fontSize = state.fontSize + 'rem';
+        reader.style.fontFamily = state.fontFamily;
+        fontSizeDisplay.textContent = state.fontSize.toFixed(1);
+
+        // Resaltar botones de fuente y tema
+        document.querySelectorAll('#fontFamilyGroup button').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.font === state.fontFamily);
+        });
+        document.querySelectorAll('#themeGroup button').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.theme === state.theme);
+        });
+
+        // Cargar el libro
+        loadBook();
+      }
+
+      // Asegurar que el DOM está listo
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+
+    })();
+  </script>
+</body>
+</html>
