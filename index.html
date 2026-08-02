@@ -68,7 +68,6 @@
             overflow: hidden;
         }
 
-        /* UI envuelta en <aside> para evitar el modo lectura */
         #app-ui {
             display: contents;
         }
@@ -123,11 +122,10 @@
             font-family: 'Georgia', serif;
         }
 
-        /* 🔥 SOLUCIÓN: los párrafos heredan el tamaño de #reader */
         #reader p {
             margin: 0 0 1.4em 0;
             text-align: justify;
-            font-size: inherit; /* ← Aquí estaba el bloqueo */
+            font-size: inherit;
             transition: font-size 0.1s ease;
         }
 
@@ -425,6 +423,92 @@
             border-radius: 8px;
         }
 
+        /* --- CARTEL DE BIENVENIDA (SOBRIO) --- */
+        #welcome-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.6s ease;
+        }
+        #welcome-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #welcome-card {
+            background: var(--bg);
+            color: var(--text);
+            max-width: 400px;
+            width: 90%;
+            padding: 2.5rem 2rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            transform: scale(0.95);
+            transition: transform 0.4s ease;
+            font-family: 'Georgia', serif;
+        }
+        #welcome-overlay.show #welcome-card {
+            transform: scale(1);
+        }
+
+        #welcome-card h1 {
+            font-size: 1.6rem;
+            font-weight: 400;
+            letter-spacing: 0.02em;
+            margin-bottom: 0.5rem;
+            color: var(--accent);
+        }
+
+        #welcome-card p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin: 1.2rem 0 1.8rem;
+            opacity: 0.85;
+        }
+
+        #welcome-card .highlight {
+            display: inline-block;
+            background: var(--accent-light);
+            color: var(--accent);
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+
+        #welcome-card button {
+            background: var(--accent);
+            border: none;
+            color: #fff;
+            padding: 0.8rem 2rem;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            letter-spacing: 0.04em;
+        }
+        #welcome-card button:hover {
+            background: #a8825a;
+        }
+        #welcome-card button:active {
+            transform: scale(0.96);
+        }
+
+        /* Ajuste para modo oscuro */
+        body.dark #welcome-card {
+            --bg: #1f1f23;
+            --text: #e0ddd8;
+        }
+
         @media (max-width: 480px) {
             #reader {
                 padding: 16px 18px;
@@ -437,11 +521,21 @@
                 font-size: 0.7rem;
                 padding: 4px 10px;
             }
+            #welcome-card {
+                padding: 2rem 1.5rem;
+            }
+            #welcome-card h1 {
+                font-size: 1.3rem;
+            }
+            #welcome-card p {
+                font-size: 1rem;
+            }
         }
     </style>
 </head>
 <body>
     <div id="app">
+        <!-- UI envuelta en <aside> para evitar el modo lectura -->
         <aside id="app-ui">
             <header id="top-bar">
                 <button class="menu-btn" id="menuToggle" aria-label="Menú">☰</button>
@@ -497,11 +591,25 @@
         <div id="toast" class="toast"></div>
     </div>
 
+    <!-- CARTEL DE BIENVENIDA (solo aparece la primera vez) -->
+    <div id="welcome-overlay">
+        <div id="welcome-card">
+            <h1>📖 Lector Ágil</h1>
+            <p>
+                Cambia el tamaño de la letra con los botones <strong>+</strong> y <strong>−</strong>.<br>
+                Guarda tu página actual abriendo el menú <span class="highlight">☰</span> (tres rayitas) y usando <strong>"Guardar"</strong>.
+                <br><br>
+                <span style="font-size:0.9rem; opacity:0.7;">Todo se guarda automáticamente.</span>
+            </p>
+            <button id="welcome-close">Entendido</button>
+        </div>
+    </div>
+
     <script>
         (function() {
             'use strict';
 
-            console.log('📖 Lector Ágil v2.6 - CSS heredado corregido');
+            console.log('📖 Lector Ágil v2.7 - Con cartel de bienvenida');
 
             const FONT_MAP = {
                 georgia: 'Georgia, serif',
@@ -530,6 +638,9 @@
             const goToBookmarkBtn = document.getElementById('goToBookmark');
             const toast = document.getElementById('toast');
 
+            const welcomeOverlay = document.getElementById('welcome-overlay');
+            const welcomeClose = document.getElementById('welcome-close');
+
             const state = {
                 fontSize: 1.0,
                 fontKey: 'georgia',
@@ -544,6 +655,7 @@
             const MAX_FONT = 3.0;
             const FONT_STEP = 0.15;
             const STORAGE_KEY = 'lector_agile_config';
+            const WELCOME_KEY = 'lector_welcome_shown';
 
             function loadState() {
                 try {
@@ -574,15 +686,11 @@
             function applyFontSize(size) {
                 let newSize = Math.round(Math.min(MAX_FONT, Math.max(MIN_FONT, size)) * 10) / 10;
                 state.fontSize = newSize;
-
-                // Aplicar al contenedor; los párrafos heredan gracias a font-size: inherit
                 reader.style.fontSize = state.fontSize + 'rem';
-
                 fontSizeDisplay.textContent = state.fontSize.toFixed(1);
                 fontSizeDisplay.classList.remove('pop');
                 void fontSizeDisplay.offsetWidth;
                 fontSizeDisplay.classList.add('pop');
-
                 saveState();
                 requestAnimationFrame(() => updateProgress());
                 console.log('🔠 Tamaño:', state.fontSize);
@@ -753,6 +861,31 @@
                 bottomBar.classList.toggle('hidden', !state.barsVisible);
             }
 
+            // ---- CARTEL DE BIENVENIDA ----
+            function showWelcome() {
+                const alreadyShown = localStorage.getItem(WELCOME_KEY);
+                if (alreadyShown) return;
+                // Mostrar el overlay con un pequeño retraso para que la página cargue
+                setTimeout(() => {
+                    welcomeOverlay.classList.add('show');
+                }, 600);
+            }
+
+            function hideWelcome() {
+                welcomeOverlay.classList.remove('show');
+                localStorage.setItem(WELCOME_KEY, 'true');
+            }
+
+            // Eventos del cartel
+            welcomeClose.addEventListener('click', hideWelcome);
+            welcomeOverlay.addEventListener('click', function(e) {
+                // Si se hace clic en el fondo (no en la tarjeta), también cerrar
+                if (e.target === welcomeOverlay) {
+                    hideWelcome();
+                }
+            });
+
+            // ---- EVENTOS PRINCIPALES ----
             reader.addEventListener('scroll', handleScroll, { passive: true });
             reader.addEventListener('click', toggleBars);
 
@@ -796,6 +929,7 @@
 
             window.addEventListener('beforeunload', () => saveState());
 
+            // ---- INICIO ----
             function init() {
                 loadState();
                 topBar.classList.remove('hidden');
@@ -814,7 +948,10 @@
                     btn.classList.toggle('active', btn.dataset.theme === state.theme);
                 });
 
-                loadBook();
+                loadBook().then(() => {
+                    // Mostrar el cartel de bienvenida después de cargar el libro
+                    showWelcome();
+                });
             }
 
             if (document.readyState === 'loading') {
