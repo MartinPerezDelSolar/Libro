@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Lector Ágil</title>
     <style>
-        /* --- RESET Y ESTILOS BASE --- */
+        /* RESET */
         * {
             margin: 0;
             padding: 0;
@@ -14,10 +14,10 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* 🔥 SOLUCIÓN 1: Desactivar el ajuste automático de texto en iOS */
         html {
             -webkit-text-size-adjust: 100%;
             text-size-adjust: 100%;
+            font-size: 16px; /* base fija para rem */
         }
 
         :root {
@@ -69,13 +69,10 @@
             overflow: hidden;
         }
 
-        /* 🔥 SOLUCIÓN 2: Engañar al Modo Lectura de Safari */
-        /* Envolvemos toda la UI en un <aside> para que Safari la respete */
         #app-ui {
-            display: contents; /* No rompe el layout flex */
+            display: contents;
         }
 
-        /* --- BARRA SUPERIOR --- */
         #top-bar {
             display: flex;
             align-items: center;
@@ -110,7 +107,7 @@
             background: var(--accent-light);
         }
 
-        /* --- ÁREA DE LECTURA --- */
+        /* ---------- ÁREA DE LECTURA ---------- */
         #reader {
             flex: 1;
             overflow-y: auto;
@@ -123,15 +120,18 @@
             letter-spacing: 0.01em;
             word-break: break-word;
             font-family: 'Georgia', serif;
+            /* El tamaño se aplicará directamente en el elemento via JavaScript */
         }
+
+        /* AHORA los párrafos heredan el font-size del contenedor */
         #reader p {
             margin: 0 0 1.4em 0;
             text-align: justify;
-            font-size: 1rem;
+            /* font-size se hereda de #reader */
             transition: font-size 0.15s ease;
         }
 
-        /* --- BARRA INFERIOR --- */
+        /* ---------- RESTO DE ESTILOS (sin cambios) ---------- */
         #bottom-bar {
             display: flex;
             align-items: center;
@@ -151,7 +151,6 @@
             opacity: 0;
             pointer-events: none;
         }
-
         .progress-track {
             flex: 1;
             height: 3px;
@@ -184,7 +183,6 @@
             opacity: 1;
             transform: scale(1);
         }
-
         .page-info {
             font-size: 0.7rem;
             opacity: 0.6;
@@ -195,7 +193,6 @@
             text-align: right;
         }
 
-        /* --- MENÚ LATERAL --- */
         .menu-overlay {
             position: fixed;
             inset: 0;
@@ -234,7 +231,6 @@
         .menu-panel.open {
             transform: translateX(0);
         }
-
         .menu-panel h2 {
             font-size: 1.1rem;
             font-weight: 500;
@@ -383,7 +379,6 @@
             background: var(--accent-light);
         }
 
-        /* --- TOAST --- */
         .toast {
             position: fixed;
             bottom: 80px;
@@ -405,7 +400,6 @@
             transform: translateX(-50%) translateY(0);
         }
 
-        /* Scrollbar */
         #reader::-webkit-scrollbar {
             width: 4px;
         }
@@ -434,14 +428,10 @@
 </head>
 <body>
     <div id="app">
-        <!-- 🔥 Envolvemos la UI (barras y menú) en un <aside> para engañar al Modo Lectura -->
         <aside id="app-ui">
-            <!-- Barra Superior -->
             <header id="top-bar">
                 <button class="menu-btn" id="menuToggle" aria-label="Menú">☰</button>
             </header>
-
-            <!-- Barra Inferior -->
             <footer id="bottom-bar">
                 <div class="progress-track">
                     <div class="progress-fill" id="progressFill"></div>
@@ -449,12 +439,9 @@
                 </div>
                 <span class="page-info" id="pageInfo">Pág. 1</span>
             </footer>
-
-            <!-- Menú -->
             <div class="menu-overlay" id="menuOverlay"></div>
             <div class="menu-panel" id="menuPanel">
                 <h2>Configuración</h2>
-
                 <div class="menu-section">
                     <label>Tamaño de fuente</label>
                     <div class="font-size-control">
@@ -463,7 +450,6 @@
                         <button type="button" id="fontInc">+</button>
                     </div>
                 </div>
-
                 <div class="menu-section">
                     <label>Tipo de fuente</label>
                     <div class="font-family-group" id="fontFamilyGroup">
@@ -474,7 +460,6 @@
                         <button data-font="palatino">Palatino</button>
                     </div>
                 </div>
-
                 <div class="menu-section">
                     <label>Tema</label>
                     <div class="theme-group" id="themeGroup">
@@ -483,7 +468,6 @@
                         <button data-theme="dark">Oscuro <span class="preview"></span></button>
                     </div>
                 </div>
-
                 <div class="menu-section">
                     <label>Marcador</label>
                     <div class="bookmark-actions">
@@ -491,15 +475,10 @@
                         <button id="goToBookmark">📍 Ir</button>
                     </div>
                 </div>
-
                 <button class="close-menu" id="closeMenu">Cerrar</button>
             </div>
         </aside>
-
-        <!-- Área de Lectura (el contenido principal) -->
         <main id="reader"></main>
-
-        <!-- Toast -->
         <div id="toast" class="toast"></div>
     </div>
 
@@ -507,7 +486,7 @@
         (function() {
             'use strict';
 
-            console.log('📖 Lector Ágil v2.4 - Completo y funcional');
+            console.log('📖 Lector Ágil v2.5 - Tamaño de fuente corregido');
 
             // ---------- MAPEO DE FUENTES ----------
             const FONT_MAP = {
@@ -518,7 +497,7 @@
                 palatino: '"Palatino Linotype", "Book Antiqua", serif'
             };
 
-            // ---------- DOM REFS ----------
+            // ---------- DOM ----------
             const reader = document.getElementById('reader');
             const topBar = document.getElementById('top-bar');
             const bottomBar = document.getElementById('bottom-bar');
@@ -543,7 +522,7 @@
                 fontSize: 1.0,
                 fontKey: 'georgia',
                 theme: 'light',
-                bookmark: null, // porcentaje (0-1)
+                bookmark: null,
                 scrollPercent: 0,
                 menuOpen: false,
                 barsVisible: true,
@@ -581,30 +560,34 @@
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
             }
 
-            // ---------- APLICAR ESTILOS ----------
+            // ---------- FUNCIÓN PRINCIPAL DE TAMAÑO ----------
             function applyFontSize(size) {
                 let newSize = Math.min(MAX_FONT, Math.max(MIN_FONT, size));
                 if (newSize === state.fontSize) return;
                 state.fontSize = newSize;
+                // Aplicar directamente al contenedor, los párrafos heredarán
                 reader.style.fontSize = state.fontSize + 'rem';
                 fontSizeDisplay.textContent = state.fontSize.toFixed(1);
                 saveState();
+                // Forzar reflow
+                void reader.offsetHeight;
+                // Actualizar progreso (el número de páginas cambia)
                 requestAnimationFrame(() => updateProgress());
                 console.log('🔠 Tamaño fuente:', state.fontSize);
+                // Mostrar un pequeño feedback visual
+                showToast(`Tamaño: ${state.fontSize.toFixed(1)}`);
             }
 
             function applyFontFamily(key) {
                 if (!FONT_MAP[key]) return;
                 state.fontKey = key;
                 reader.style.fontFamily = FONT_MAP[key];
-                // Resaltar botón activo
                 document.querySelectorAll('#fontFamilyGroup button').forEach(btn => {
                     btn.classList.toggle('active', btn.dataset.font === key);
                 });
                 saveState();
                 showToast(`Fuente: ${key.charAt(0).toUpperCase() + key.slice(1)}`);
                 requestAnimationFrame(() => updateProgress());
-                console.log('🔤 Fuente:', FONT_MAP[key]);
             }
 
             function applyTheme(theme) {
@@ -616,7 +599,7 @@
                 saveState();
             }
 
-            // ---------- PROGRESO Y PÁGINAS ----------
+            // ---------- PROGRESO ----------
             function updateProgress() {
                 const scrollTop = reader.scrollTop;
                 const scrollHeight = reader.scrollHeight;
@@ -636,7 +619,6 @@
                 const currentPage = Math.min(totalPages, Math.floor(scrollTop / clientHeight) + 1);
                 pageInfo.textContent = `Pág. ${currentPage} de ${totalPages}`;
 
-                // Actualizar punto de marcador
                 if (state.bookmark !== null) {
                     const bmPercent = Math.min(1, Math.max(0, state.bookmark));
                     bookmarkDot.style.left = `calc(${bmPercent * 100}% - 4px)`;
@@ -693,15 +675,14 @@
                 showToast('📍 Ir al marcador');
             }
 
-            // ---------- CARGAR LIBRO (con anti-caché) ----------
+            // ---------- CARGAR LIBRO ----------
             async function loadBook() {
                 try {
                     const url = 'libro.txt?t=' + Date.now();
-                    console.log('📂 Cargando libro desde:', url);
+                    console.log('📂 Cargando:', url);
                     const resp = await fetch(url);
                     if (!resp.ok) throw new Error('Error ' + resp.status + ': ' + resp.statusText);
                     const text = await resp.text();
-                    // Dividir en párrafos por dos saltos de línea
                     const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim() !== '');
                     if (paragraphs.length === 0) {
                         reader.innerHTML = '<p><em>El libro está vacío.</em></p>';
@@ -715,18 +696,17 @@
                     applyFontFamily(state.fontKey);
                     applyTheme(state.theme);
 
-                    // Restaurar posición después de renderizar
                     requestAnimationFrame(() => {
-                        void reader.offsetHeight; // forzar reflow
+                        void reader.offsetHeight;
                         restoreScrollPosition();
                     });
 
                     saveState();
-                    console.log('✅ Libro cargado correctamente');
+                    console.log('✅ Libro cargado');
                 } catch (err) {
                     reader.innerHTML =
-                        `<p style="color: #b44; padding: 2rem; text-align: center;"><strong>Error al cargar el libro:</strong><br>${err.message}<br><br>Asegúrate de que el archivo <code>libro.txt</code> esté en la misma carpeta.</p>`;
-                    console.error('❌ Error al cargar el libro:', err);
+                        `<p style="color: #b44; padding: 2rem; text-align: center;"><strong>Error:</strong> ${err.message}<br><br>Asegúrate de que <code>libro.txt</code> esté en la misma carpeta.</p>`;
+                    console.error('❌ Error:', err);
                 }
             }
 
@@ -748,7 +728,7 @@
             // ---------- TOAST ----------
             let toastTimer = null;
 
-            function showToast(msg, duration = 2000) {
+            function showToast(msg, duration = 1500) {
                 if (toastTimer) {
                     clearTimeout(toastTimer);
                     toast.classList.remove('show');
@@ -761,7 +741,7 @@
                 }, duration);
             }
 
-            // ---------- OCULTAR/MOSTRAR BARRAS ----------
+            // ---------- OCULTAR BARRAS ----------
             function toggleBars() {
                 state.barsVisible = !state.barsVisible;
                 topBar.classList.toggle('hidden', !state.barsVisible);
@@ -815,18 +795,15 @@
             // ---------- INICIO ----------
             function init() {
                 loadState();
-                // Forzar visibilidad inicial
                 topBar.classList.remove('hidden');
                 bottomBar.classList.remove('hidden');
                 state.barsVisible = true;
 
-                // Aplicar estilos base
                 document.body.className = state.theme === 'light' ? '' : state.theme;
                 reader.style.fontSize = state.fontSize + 'rem';
                 reader.style.fontFamily = FONT_MAP[state.fontKey] || 'Georgia, serif';
                 fontSizeDisplay.textContent = state.fontSize.toFixed(1);
 
-                // Resaltar botones activos
                 document.querySelectorAll('#fontFamilyGroup button').forEach(btn => {
                     btn.classList.toggle('active', btn.dataset.font === state.fontKey);
                 });
@@ -834,7 +811,6 @@
                     btn.classList.toggle('active', btn.dataset.theme === state.theme);
                 });
 
-                // Cargar el libro
                 loadBook();
             }
 
