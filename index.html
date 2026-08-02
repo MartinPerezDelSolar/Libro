@@ -1,671 +1,669 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Lector de Texto</title>
-    <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600;7..72,700&display=swap" rel="stylesheet">
-    <style>
-        /* ===== RESET Y BASE ===== */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-        html, body {
-            height: 100%;
-            width: 100%;
-            overflow: hidden;
-            background: #f9f6f0;
-            font-family: 'Literata', 'Georgia', serif;
-            transition: background 0.4s ease, color 0.4s ease;
-        }
-        #app {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            height: 100dvh;
-            display: flex;
-            flex-direction: column;
-            background: #f9f6f0;
-            transition: background 0.4s ease;
-            overflow: hidden;
-        }
-        #viewer {
-            flex: 1;
-            width: 100%;
-            height: 100%;
-            overflow-y: auto;
-            padding: 20px 10%;
-            background: transparent;
-            transition: padding 0.2s ease;
-            font-size: 1.1em;
-            line-height: 1.8;
-            color: #2c2c2c;
-            letter-spacing: 0.02em;
-            word-wrap: break-word;
-            white-space: pre-wrap;
-        }
-        @media (max-width: 480px) {
-            #viewer { padding: 20px 6%; }
-        }
-        /* ===== BARRAS ===== */
-        .bar {
-            position: absolute;
-            left: 0;
-            right: 0;
-            padding: 14px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: rgba(249, 246, 240, 0.75);
-            backdrop-filter: blur(14px) saturate(180%);
-            -webkit-backdrop-filter: blur(14px) saturate(180%);
-            transition: opacity 0.4s ease, transform 0.3s ease, background 0.4s ease;
-            z-index: 50;
-            border: none;
-            user-select: none;
-            min-height: 56px;
-        }
-        .bar.hidden {
-            opacity: 0;
-            pointer-events: none;
-            transform: translateY(-100%);
-        }
-        #top-bar {
-            top: 0;
-            border-bottom: 1px solid rgba(201, 169, 110, 0.15);
-        }
-        #bottom-bar {
-            bottom: 0;
-            border-top: 1px solid rgba(201, 169, 110, 0.15);
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
-        #book-title {
-            font-weight: 600;
-            font-size: 0.95rem;
-            letter-spacing: 0.3px;
-            color: #3a3a3a;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 50vw;
-            transition: color 0.3s ease;
-        }
-        .btn-icon {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            padding: 6px 10px;
-            cursor: pointer;
-            border-radius: 30px;
-            transition: all 0.2s ease;
-            color: #5a4d3e;
-            line-height: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 44px;
-            min-height: 44px;
-        }
-        .btn-icon:active {
-            transform: scale(0.90);
-            background: rgba(201, 169, 110, 0.2);
-        }
-        #bookmark-btn {
-            color: #b0a090;
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        #bookmark-btn.active {
-            color: #c9a96e;
-            transform: scale(1.1);
-            text-shadow: 0 0 12px rgba(201, 169, 110, 0.3);
-        }
-        .font-group {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            background: rgba(0, 0, 0, 0.04);
-            border-radius: 40px;
-            padding: 2px 6px;
-        }
-        .font-group .btn-icon {
-            font-size: 1.2rem;
-            min-width: 36px;
-            min-height: 36px;
-            padding: 0 6px;
-            color: #4a3f33;
-        }
-        #font-size-label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #7a6b5a;
-            min-width: 28px;
-            text-align: center;
-            letter-spacing: 0.5px;
-        }
-        #page-counter {
-            font-size: 0.8rem;
-            font-weight: 400;
-            color: #7a6b5a;
-            letter-spacing: 0.4px;
-            background: rgba(0, 0, 0, 0.03);
-            padding: 4px 14px;
-            border-radius: 40px;
-            white-space: nowrap;
-            transition: color 0.3s ease;
-        }
-        #theme-toggle {
-            font-size: 1.3rem;
-        }
-        /* ===== MODO OSCURO ===== */
-        #app.dark-mode {
-            background: #1a1a1e;
-        }
-        #app.dark-mode #viewer {
-            color: #e8e4dd;
-        }
-        #app.dark-mode .bar {
-            background: rgba(26, 26, 30, 0.82);
-            backdrop-filter: blur(14px) saturate(180%);
-            -webkit-backdrop-filter: blur(14px) saturate(180%);
-            border-color: rgba(255, 255, 255, 0.06);
-        }
-        #app.dark-mode #book-title {
-            color: #e0d6c8;
-        }
-        #app.dark-mode .btn-icon {
-            color: #c0b6a8;
-        }
-        #app.dark-mode #page-counter {
-            color: #a09888;
-            background: rgba(255, 255, 255, 0.06);
-        }
-        #app.dark-mode .font-group {
-            background: rgba(255, 255, 255, 0.07);
-        }
-        #app.dark-mode .font-group .btn-icon {
-            color: #d0c8b8;
-        }
-        #app.dark-mode #font-size-label {
-            color: #b0a898;
-        }
-        #app.dark-mode #bookmark-btn {
-            color: #6a6050;
-        }
-        #app.dark-mode #bookmark-btn.active {
-            color: #d4b87a;
-            text-shadow: 0 0 20px rgba(212, 184, 122, 0.3);
-        }
-        /* ===== LOADER ===== */
-        #loader {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            background: #f9f6f0;
-            transition: opacity 0.8s ease, visibility 0.8s ease;
-            gap: 20px;
-            text-align: center;
-            padding: 20px;
-        }
-        #app.dark-mode #loader {
-            background: #1a1a1e;
-        }
-        #loader.hidden {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-        }
-        .spinner {
-            width: 36px;
-            height: 36px;
-            border: 3px solid rgba(201, 169, 110, 0.2);
-            border-top: 3px solid #c9a96e;
-            border-radius: 50%;
-            animation: spin 0.9s cubic-bezier(0.6, 0.2, 0.4, 0.8) infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        #loader p {
-            font-size: 0.9rem;
-            color: #7a6b5a;
-            letter-spacing: 0.5px;
-            max-width: 90%;
-        }
-        #loader .error {
-            color: #b02a2a;
-            font-weight: 500;
-        }
-        #loader .hint {
-            font-size: 0.8rem;
-            color: #7a6b5a;
-            background: rgba(0,0,0,0.05);
-            padding: 12px 18px;
-            border-radius: 8px;
-            max-width: 90%;
-            line-height: 1.6;
-            margin: 10px 0;
-        }
-        #loader .hint code {
-            background: rgba(0,0,0,0.08);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.85em;
-        }
-        .loader-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            justify-content: center;
-            margin-top: 10px;
-        }
-        .loader-buttons button {
-            background: #c9a96e;
-            border: none;
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 30px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: background 0.2s;
-            font-family: inherit;
-        }
-        .loader-buttons button:hover {
-            background: #b08a4e;
-        }
-        .loader-buttons .secondary {
-            background: #6a6050;
-        }
-        .loader-buttons .secondary:hover {
-            background: #5a5040;
-        }
-        #app.dark-mode #loader .hint {
-            background: rgba(255,255,255,0.08);
-            color: #b0a898;
-        }
-        #app.dark-mode #loader .hint code {
-            background: rgba(255,255,255,0.15);
-        }
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 480px) {
-            .bar { padding: 10px 14px; min-height: 48px; }
-            #book-title { font-size: 0.8rem; max-width: 35vw; }
-            .btn-icon { font-size: 1.3rem; min-width: 38px; min-height: 38px; padding: 4px 6px; }
-            #page-counter { font-size: 0.7rem; padding: 2px 10px; }
-            .font-group .btn-icon { font-size: 1.0rem; min-width: 30px; min-height: 30px; }
-            #viewer { padding: 16px 5%; }
-        }
-        @supports (padding-top: env(safe-area-inset-top)) {
-            #top-bar { padding-top: calc(14px + env(safe-area-inset-top)); }
-            #bottom-bar { padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Lector Minimalista</title>
+  <style>
+    /* Reset y estilos base */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: #f9f6f0;
+      color: #2c2c2c;
+      font-family: 'Georgia', serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      transition: background 0.4s ease, color 0.4s ease;
+    }
+
+    body.dark {
+      background: #1a1a1e;
+      color: #e0ddd8;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 680px;
+      height: 100vh;
+      height: 100dvh; /* Para móviles modernos */
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      background: inherit;
+    }
+
+    /* Barras de control */
+    .bar {
+      background: rgba(249, 246, 240, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      transition: transform 0.35s ease, opacity 0.35s ease, background 0.4s ease;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+      z-index: 10;
+    }
+
+    body.dark .bar {
+      background: rgba(26, 26, 30, 0.92);
+      border-bottom-color: rgba(255,255,255,0.05);
+    }
+
+    #top-bar {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    #top-bar.hidden {
+      transform: translateY(-100%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #bottom-bar {
+      border-top: 1px solid rgba(0,0,0,0.05);
+      border-bottom: none;
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    body.dark #bottom-bar {
+      border-top-color: rgba(255,255,255,0.05);
+    }
+
+    #bottom-bar.hidden {
+      transform: translateY(100%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Área de lectura */
+    #reader {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px 20px 20px;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      background: inherit;
+      transition: background 0.4s ease;
+      position: relative;
+    }
+
+    #reader p {
+      margin: 0 0 1.2em 0;
+      line-height: 1.8;
+      letter-spacing: 0.02em;
+      text-align: justify;
+      font-size: 1rem;
+      transition: font-size 0.3s ease;
+      word-break: break-word;
+    }
+
+    /* Personalización de scroll (opcional) */
+    #reader::-webkit-scrollbar {
+      width: 4px;
+    }
+    #reader::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    #reader::-webkit-scrollbar-thumb {
+      background: #c9a96e;
+      border-radius: 8px;
+    }
+
+    /* Botones */
+    .btn {
+      background: transparent;
+      border: none;
+      color: inherit;
+      font-size: 1.1rem;
+      padding: 6px 10px;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: background 0.2s, transform 0.2s, color 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 36px;
+      min-height: 36px;
+      touch-action: manipulation;
+    }
+
+    .btn:hover {
+      background: rgba(0,0,0,0.05);
+    }
+    body.dark .btn:hover {
+      background: rgba(255,255,255,0.08);
+    }
+    .btn:active {
+      transform: scale(0.94);
+    }
+
+    .btn-icon {
+      font-size: 1.3rem;
+      line-height: 1;
+    }
+
+    .btn-bookmark.active {
+      color: #c9a96e;
+      text-shadow: 0 0 8px rgba(201, 169, 110, 0.3);
+    }
+
+    .btn-font {
+      font-size: 0.9rem;
+      padding: 4px 10px;
+      border: 1px solid rgba(0,0,0,0.1);
+      border-radius: 20px;
+      margin: 0 2px;
+      background: rgba(0,0,0,0.03);
+    }
+    body.dark .btn-font {
+      border-color: rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.05);
+    }
+    .btn-font.active-font {
+      border-color: #c9a96e;
+      background: rgba(201, 169, 110, 0.15);
+      color: #c9a96e;
+    }
+
+    .btn-mode {
+      font-size: 1.2rem;
+    }
+
+    /* Grupo de fuentes en top-bar */
+    .font-group {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* Progreso en bottom-bar */
+    .progress-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .progress-bar {
+      flex: 1;
+      height: 3px;
+      background: rgba(0,0,0,0.1);
+      border-radius: 4px;
+      position: relative;
+      overflow: visible;
+    }
+    body.dark .progress-bar {
+      background: rgba(255,255,255,0.12);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: #c9a96e;
+      border-radius: 4px;
+      transition: width 0.2s ease;
+    }
+
+    .progress-text {
+      font-size: 0.75rem;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.02em;
+      opacity: 0.7;
+      white-space: nowrap;
+      min-width: 70px;
+    }
+
+    .bookmark-indicator {
+      position: absolute;
+      top: -4px;
+      right: -6px;
+      width: 10px;
+      height: 10px;
+      background: #c9a96e;
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(201, 169, 110, 0.5);
+      opacity: 0;
+      transform: scale(0.5);
+      transition: opacity 0.3s, transform 0.3s;
+      pointer-events: none;
+    }
+    .bookmark-indicator.visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* Mensaje flotante (toast) */
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(0,0,0,0.75);
+      color: #fff;
+      padding: 10px 22px;
+      border-radius: 30px;
+      font-size: 0.9rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      z-index: 100;
+      backdrop-filter: blur(4px);
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Ajustes para móviles muy pequeños */
+    @media (max-width: 480px) {
+      .bar {
+        padding: 6px 10px;
+      }
+      .btn {
+        font-size: 1rem;
+        padding: 4px 6px;
+        min-width: 32px;
+        min-height: 32px;
+      }
+      .btn-font {
+        font-size: 0.7rem;
+        padding: 2px 8px;
+      }
+      #reader {
+        padding: 12px 16px;
+      }
+      .progress-text {
+        font-size: 0.65rem;
+        min-width: 60px;
+      }
+    }
+
+    /* Animación de marcador */
+    @keyframes bookmarkPop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.4); }
+      100% { transform: scale(1); }
+    }
+    .btn-bookmark.pop {
+      animation: bookmarkPop 0.3s ease;
+    }
+
+    /* Evitar selección de texto en botones */
+    .btn, .bar {
+      user-select: none;
+    }
+  </style>
 </head>
 <body>
+  <div id="app">
+    <!-- Barra superior -->
+    <header id="top-bar" class="bar">
+      <div class="font-group">
+        <button class="btn btn-font" data-font="Georgia">Georgia</button>
+        <button class="btn btn-font" data-font="'Times New Roman', serif">Times</button>
+        <button class="btn btn-font" data-font="Arial, sans-serif">Arial</button>
+        <button class="btn btn-font" data-font="Verdana, sans-serif">Verdana</button>
+        <button class="btn btn-font" data-font="'Palatino Linotype', 'Book Antiqua', serif">Palatino</button>
+      </div>
+      <div style="display: flex; gap: 4px;">
+        <button class="btn btn-mode" id="modeToggle" title="Modo claro/oscuro">🌙</button>
+        <button class="btn btn-bookmark" id="bookmarkBtn" title="Marcador">🔖</button>
+      </div>
+    </header>
 
-<div id="app">
-    <!-- LOADER -->
-    <div id="loader">
-        <div class="spinner" id="loader-spinner"></div>
-        <p id="loader-message">Cargando el libro...</p>
-        <div id="loader-hint" class="hint" style="display:none;"></div>
-        <div class="loader-buttons">
-            <button id="btn-upload" class="secondary">📂 Cargar archivo de texto</button>
+    <!-- Área de lectura -->
+    <main id="reader">
+      <!-- El texto se inyecta aquí -->
+    </main>
+
+    <!-- Barra inferior -->
+    <footer id="bottom-bar" class="bar">
+      <div class="progress-container">
+        <span class="progress-text" id="pageInfo">Pág. 1 de 1</span>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+          <span class="bookmark-indicator" id="bookmarkDot"></span>
         </div>
-        <input type="file" id="file-input" accept=".txt,.rtf,.text" style="display:none;">
-    </div>
+      </div>
+      <div style="display: flex; gap: 4px;">
+        <button class="btn" id="fontDecrease" title="Reducir texto">A-</button>
+        <button class="btn" id="fontIncrease" title="Aumentar texto">A+</button>
+      </div>
+    </footer>
 
-    <!-- BARRA SUPERIOR -->
-    <div id="top-bar" class="bar">
-        <span id="book-title">Mi libro</span>
-        <button id="bookmark-btn" class="btn-icon" aria-label="Marcar posición">✦</button>
-    </div>
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+  </div>
 
-    <!-- VISOR -->
-    <div id="viewer"></div>
-
-    <!-- BARRA INFERIOR -->
-    <div id="bottom-bar" class="bar">
-        <button id="theme-toggle" class="btn-icon" aria-label="Cambiar tema">🌙</button>
-        <span id="page-counter">0%</span>
-        <div class="font-group">
-            <button id="font-decrease" class="btn-icon" aria-label="Reducir texto">A<sup>−</sup></button>
-            <span id="font-size-label">1.0</span>
-            <button id="font-increase" class="btn-icon" aria-label="Aumentar texto">A<sup>+</sup></button>
-        </div>
-    </div>
-</div>
-
-<script>
+  <script>
     (function() {
-        'use strict';
+      'use strict';
 
-        // ============================
-        //  REFERENCIAS
-        // ============================
-        const viewer = document.getElementById('viewer');
-        const loader = document.getElementById('loader');
-        const loaderMsg = document.getElementById('loader-message');
-        const loaderHint = document.getElementById('loader-hint');
-        const loaderSpinner = document.getElementById('loader-spinner');
-        const titleEl = document.getElementById('book-title');
-        const pageCounter = document.getElementById('page-counter');
-        const bookmarkBtn = document.getElementById('bookmark-btn');
-        const themeToggle = document.getElementById('theme-toggle');
-        const fontInc = document.getElementById('font-increase');
-        const fontDec = document.getElementById('font-decrease');
-        const fontSizeLabel = document.getElementById('font-size-label');
-        const topBar = document.getElementById('top-bar');
-        const bottomBar = document.getElementById('bottom-bar');
-        const fileInput = document.getElementById('file-input');
-        const btnUpload = document.getElementById('btn-upload');
+      // Elementos DOM
+      const reader = document.getElementById('reader');
+      const topBar = document.getElementById('top-bar');
+      const bottomBar = document.getElementById('bottom-bar');
+      const progressFill = document.getElementById('progressFill');
+      const pageInfo = document.getElementById('pageInfo');
+      const bookmarkBtn = document.getElementById('bookmarkBtn');
+      const bookmarkDot = document.getElementById('bookmarkDot');
+      const modeToggle = document.getElementById('modeToggle');
+      const fontIncrease = document.getElementById('fontIncrease');
+      const fontDecrease = document.getElementById('fontDecrease');
+      const fontButtons = document.querySelectorAll('.btn-font');
+      const toast = document.getElementById('toast');
 
-        // ============================
-        //  ESTADO
-        // ============================
-        const STORAGE_KEY = 'lector_text_state';
-        let state = {
-            fontSize: 1.0,
-            theme: 'light',
-            bookmark: 0,       // porcentaje (0-100)
-            scrollPos: 0,      // posición en píxeles
-            content: '',
-            fileName: 'Mi libro',
-        };
+      // Estado
+      let currentFontSize = 1.0; // en rem
+      let currentFontFamily = 'Georgia, serif';
+      let isDark = false;
+      let bookmarkPosition = null; // scrollTop guardado
+      let scrollPosition = 0;
+      let isBookmarkActive = false;
+      let toastTimeout = null;
 
+      // Constantes
+      const STORAGE_KEY = 'lector_config';
+      const MIN_FONT = 0.7;
+      const MAX_FONT = 2.0;
+      const FONT_STEP = 0.08;
+
+      // Cargar configuración guardada
+      function loadConfig() {
         try {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                state.fontSize = parsed.fontSize || 1.0;
-                state.theme = parsed.theme || 'light';
-                state.bookmark = parsed.bookmark || 0;
-                state.scrollPos = parsed.scrollPos || 0;
-                state.fileName = parsed.fileName || 'Mi libro';
-            }
-        } catch (_) {}
+          const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+          if (data) {
+            currentFontSize = data.fontSize || 1.0;
+            currentFontFamily = data.fontFamily || 'Georgia, serif';
+            isDark = data.darkMode || false;
+            bookmarkPosition = data.bookmark || null;
+            scrollPosition = data.scrollPos || 0;
+            return true;
+          }
+        } catch (e) {}
+        return false;
+      }
 
-        // Aplicar tema
-        if (state.theme === 'dark') {
-            document.getElementById('app').classList.add('dark-mode');
-            themeToggle.textContent = '☀️';
-        } else {
-            themeToggle.textContent = '🌙';
-        }
-
-        // ============================
-        //  FUNCIONES PRINCIPALES
-        // ============================
-        function showError(msg, hint) {
-            loaderMsg.innerHTML = `<span class="error">⚠️ ${msg}</span>`;
-            if (hint) {
-                loaderHint.style.display = 'block';
-                loaderHint.innerHTML = hint;
-            } else {
-                loaderHint.style.display = 'none';
-            }
-            loaderSpinner.style.display = 'none';
-            console.error('❌ Error:', msg);
-        }
-
-        function clearLoader() {
-            loaderMsg.innerHTML = 'Cargando libro...';
-            loaderHint.style.display = 'none';
-            loaderSpinner.style.display = 'block';
-        }
-
-        function loadText(content, fileName) {
-            state.content = content;
-            state.fileName = fileName || 'Texto sin nombre';
-            titleEl.textContent = state.fileName.replace(/\.[^.]+$/, ''); // quitar extensión
-
-            // Dividir en párrafos (por doble salto de línea o saltos de línea)
-            // Mostramos con <br> para respetar saltos simples y párrafos con doble salto.
-            const paragraphs = content.split(/\n\s*\n/);
-            let html = paragraphs.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
-            viewer.innerHTML = html;
-
-            // Restaurar scroll si existe
-            if (state.scrollPos) {
-                setTimeout(() => {
-                    viewer.scrollTop = state.scrollPos;
-                }, 50);
-            }
-
-            // Actualizar porcentaje
-            updateCounter();
-
-            // Ocultar loader
-            loader.classList.add('hidden');
-
-            // Guardar estado
-            saveState();
-        }
-
-        function updateCounter() {
-            if (!viewer.scrollHeight || viewer.clientHeight === 0) {
-                pageCounter.textContent = '0%';
-                return;
-            }
-            const maxScroll = viewer.scrollHeight - viewer.clientHeight;
-            const current = viewer.scrollTop;
-            const percent = maxScroll > 0 ? Math.round((current / maxScroll) * 100) : 0;
-            pageCounter.textContent = percent + '%';
-        }
-
-        function applyFontSize() {
-            viewer.style.fontSize = (1.1 * state.fontSize) + 'em';
-            fontSizeLabel.textContent = state.fontSize.toFixed(1);
-        }
-
-        function saveState() {
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                    fontSize: state.fontSize,
-                    theme: state.theme,
-                    bookmark: state.bookmark,
-                    scrollPos: viewer.scrollTop,
-                    fileName: state.fileName,
-                }));
-            } catch (_) {}
-        }
-
-        // ============================
-        //  MANEJO DEL ARCHIVO
-        // ============================
-        function fetchBookFromServer() {
-            // Intentar cargar libro.txt o libro.rtf desde la misma carpeta
-            const files = ['libro.txt', 'libro.rtf'];
-            let tried = 0;
-            let loaded = false;
-
-            function tryNext() {
-                if (loaded || tried >= files.length) {
-                    if (!loaded) {
-                        showError(
-                            'No se encontró ningún archivo de texto.',
-                            'Sube un archivo .txt o .rtf usando el botón "Cargar archivo de texto".'
-                        );
-                    }
-                    return;
-                }
-                const file = files[tried];
-                tried++;
-                fetch(file)
-                    .then(res => {
-                        if (!res.ok) throw new Error('Not found');
-                        return res.text();
-                    })
-                    .then(text => {
-                        loaded = true;
-                        loadText(text, file);
-                    })
-                    .catch(() => {
-                        tryNext();
-                    });
-            }
-
-            // También permitir parámetro en URL: ?book=nombre.txt
-            const params = new URLSearchParams(window.location.search);
-            const param = params.get('book');
-            if (param) {
-                fetch(param)
-                    .then(res => {
-                        if (!res.ok) throw new Error('Not found');
-                        return res.text();
-                    })
-                    .then(text => {
-                        loaded = true;
-                        loadText(text, param);
-                    })
-                    .catch(() => {
-                        // si falla, continuar con los predeterminados
-                        tryNext();
-                    });
-            } else {
-                tryNext();
-            }
-        }
-
-        // ============================
-        //  EVENTOS DE UI
-        // ============================
-        // Subir archivo manual
-        btnUpload.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                const content = ev.target.result;
-                loadText(content, file.name);
-                e.target.value = '';
-            };
-            reader.onerror = () => {
-                showError('Error al leer el archivo.', 'Intenta con otro archivo.');
-            };
-            reader.readAsText(file);
-        });
-
-        // Marcador (bookmark)
-        bookmarkBtn.addEventListener('click', () => {
-            const maxScroll = viewer.scrollHeight - viewer.clientHeight;
-            if (maxScroll <= 0) return;
-            const percent = Math.round((viewer.scrollTop / maxScroll) * 100);
-            state.bookmark = percent;
-            // Guardar también la posición exacta para mejor precisión
-            state.scrollPos = viewer.scrollTop;
-            bookmarkBtn.classList.toggle('active', true);
-            saveState();
-            if (navigator.vibrate) navigator.vibrate(10);
-            // Mostrar un feedback visual (parpadeo)
-            bookmarkBtn.style.transform = 'scale(1.2)';
-            setTimeout(() => { bookmarkBtn.style.transform = ''; }, 200);
-        });
-
-        // Restaurar marcador al cargar
-        function restoreBookmark() {
-            if (state.bookmark > 0 && viewer.scrollHeight > viewer.clientHeight) {
-                const maxScroll = viewer.scrollHeight - viewer.clientHeight;
-                const target = (state.bookmark / 100) * maxScroll;
-                viewer.scrollTop = target;
-                bookmarkBtn.classList.add('active');
-                updateCounter();
-            }
-        }
-
-        // Tema
-        themeToggle.addEventListener('click', () => {
-            const app = document.getElementById('app');
-            if (state.theme === 'light') {
-                state.theme = 'dark';
-                app.classList.add('dark-mode');
-                themeToggle.textContent = '☀️';
-            } else {
-                state.theme = 'light';
-                app.classList.remove('dark-mode');
-                themeToggle.textContent = '🌙';
-            }
-            saveState();
-        });
-
-        // Tamaño de fuente
-        fontInc.addEventListener('click', () => {
-            state.fontSize = Math.min(2.0, state.fontSize + 0.1);
-            applyFontSize();
-            saveState();
-        });
-        fontDec.addEventListener('click', () => {
-            state.fontSize = Math.max(0.7, state.fontSize - 0.1);
-            applyFontSize();
-            saveState();
-        });
-
-        // Scroll: actualizar contador y guardar posición
-        viewer.addEventListener('scroll', () => {
-            updateCounter();
-            state.scrollPos = viewer.scrollTop;
-            // Guardar cada cierto tiempo (debounce)
-            clearTimeout(window._scrollSave);
-            window._scrollSave = setTimeout(() => saveState(), 500);
-        });
-
-        // Ocultar barras al tocar
-        let barsTimeout = null;
-        viewer.addEventListener('click', (e) => {
-            if (e.target.closest('.btn-icon') || e.target.closest('a')) return;
-            const isHidden = topBar.classList.contains('hidden');
-            topBar.classList.toggle('hidden', !isHidden);
-            bottomBar.classList.toggle('hidden', !isHidden);
-            clearTimeout(barsTimeout);
-            if (!topBar.classList.contains('hidden')) {
-                barsTimeout = setTimeout(() => {
-                    topBar.classList.add('hidden');
-                    bottomBar.classList.add('hidden');
-                }, 4500);
-            }
-        });
-
-        // Auto-ocultar barras al inicio
-        setTimeout(() => {
-            topBar.classList.add('hidden');
-            bottomBar.classList.add('hidden');
-        }, 3000);
-
-        // Inicializar
-        applyFontSize();
-        fetchBookFromServer();
-
-        // Cuando el contenido se haya cargado, restaurar bookmark y posición
-        // (se llama desde loadText)
-        const origLoad = loadText;
-        loadText = function(content, fileName) {
-            origLoad(content, fileName);
-            // Restaurar bookmark después de que el contenido esté visible
-            setTimeout(restoreBookmark, 100);
+      // Guardar configuración
+      function saveConfig() {
+        const data = {
+          fontSize: currentFontSize,
+          fontFamily: currentFontFamily,
+          darkMode: isDark,
+          bookmark: bookmarkPosition,
+          scrollPos: reader.scrollTop || 0
         };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      }
 
-        // Recalcular porcentaje al redimensionar
+      // Aplicar tema
+      function applyTheme() {
+        document.body.classList.toggle('dark', isDark);
+        modeToggle.textContent = isDark ? '☀️' : '🌙';
+        // Actualizar color de fondo de las barras (ya se maneja con CSS)
+      }
+
+      // Aplicar fuente y tamaño
+      function applyStyles() {
+        reader.style.fontSize = currentFontSize + 'rem';
+        reader.style.fontFamily = currentFontFamily;
+        // Resaltar botón de fuente activo
+        fontButtons.forEach(btn => {
+          const font = btn.dataset.font;
+          btn.classList.toggle('active-font', font === currentFontFamily);
+        });
+        updateProgress();
+      }
+
+      // Actualizar barra de progreso y página virtual
+      function updateProgress() {
+        const scrollTop = reader.scrollTop;
+        const scrollHeight = reader.scrollHeight;
+        const clientHeight = reader.clientHeight;
+
+        if (scrollHeight <= clientHeight) {
+          progressFill.style.width = '100%';
+          pageInfo.textContent = 'Pág. 1 de 1';
+          return;
+        }
+
+        const maxScroll = scrollHeight - clientHeight;
+        const percent = Math.min(100, (scrollTop / maxScroll) * 100);
+        progressFill.style.width = percent + '%';
+
+        // Páginas virtuales (cada página = una pantalla llena)
+        const totalPages = Math.ceil(scrollHeight / clientHeight);
+        const currentPage = Math.min(totalPages, Math.floor(scrollTop / clientHeight) + 1);
+        pageInfo.textContent = `Pág. ${currentPage} de ${totalPages}`;
+
+        // Actualizar indicador de marcador en la barra de progreso
+        if (bookmarkPosition !== null && bookmarkPosition <= maxScroll) {
+          const bookmarkPercent = (bookmarkPosition / maxScroll) * 100;
+          bookmarkDot.style.left = `calc(${bookmarkPercent}% - 4px)`;
+          bookmarkDot.classList.add('visible');
+        } else {
+          bookmarkDot.classList.remove('visible');
+        }
+      }
+
+      // Guardar posición de scroll (con throttle)
+      let saveTimeout = null;
+      function saveScrollPosition() {
+        if (saveTimeout) return;
+        saveTimeout = setTimeout(() => {
+          saveConfig();
+          saveTimeout = null;
+        }, 800);
+      }
+
+      // Mostrar toast
+      function showToast(message, duration = 2000) {
+        if (toastTimeout) {
+          clearTimeout(toastTimeout);
+          toast.classList.remove('show');
+        }
+        toast.textContent = message;
+        toast.classList.add('show');
+        toastTimeout = setTimeout(() => {
+          toast.classList.remove('show');
+          toastTimeout = null;
+        }, duration);
+      }
+
+      // Alternar marcador
+      function toggleBookmark() {
+        const currentScroll = reader.scrollTop;
+        if (bookmarkPosition === null || bookmarkPosition !== currentScroll) {
+          bookmarkPosition = currentScroll;
+          isBookmarkActive = true;
+          bookmarkBtn.classList.add('active');
+          bookmarkBtn.classList.add('pop');
+          setTimeout(() => bookmarkBtn.classList.remove('pop'), 400);
+          showToast('📌 Marcador guardado en esta página');
+        } else {
+          bookmarkPosition = null;
+          isBookmarkActive = false;
+          bookmarkBtn.classList.remove('active');
+          showToast('Marcador eliminado');
+        }
+        saveConfig();
+        updateProgress();
+      }
+
+      // Cargar texto desde libro.txt
+      async function loadBook() {
+        try {
+          const response = await fetch('libro.txt');
+          if (!response.ok) throw new Error('No se pudo cargar el libro');
+          const text = await response.text();
+          // Dividir en párrafos (por dos saltos de línea consecutivos)
+          const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim() !== '');
+          if (paragraphs.length === 0) {
+            reader.innerHTML = '<p><em>El libro está vacío.</em></p>';
+            return;
+          }
+          const html = paragraphs.map(p => `<p>${escapeHtml(p.trim())}</p>`).join('');
+          reader.innerHTML = html;
+          // Restaurar posición
+          if (scrollPosition > 0) {
+            reader.scrollTop = scrollPosition;
+          }
+          // Actualizar marcador
+          if (bookmarkPosition !== null) {
+            bookmarkBtn.classList.add('active');
+            isBookmarkActive = true;
+          }
+          applyStyles();
+          updateProgress();
+          // Guardar configuración después de cargar
+          saveConfig();
+        } catch (err) {
+          reader.innerHTML = `<p style="color: #b94a4a;"><strong>Error:</strong> ${err.message}</p>`;
+          console.error(err);
+        }
+      }
+
+      // Escapar HTML básico
+      function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      // Eventos de scroll
+      reader.addEventListener('scroll', () => {
+        updateProgress();
+        saveScrollPosition();
+      });
+
+      // Toggle de barras al tocar/click en el centro
+      reader.addEventListener('click', (e) => {
+        // Ignorar si se hizo clic en un botón o elemento interactivo dentro del reader? 
+        // pero los botones no están dentro del reader, así que es seguro
+        toggleBars();
+      });
+
+      // También para móviles con touch
+      reader.addEventListener('touchstart', (e) => {
+        // Para evitar que se dispare dos veces, solo si no hay un toque en un enlace o similar
+        // Simplemente toggle
+        toggleBars();
+      }, { passive: true });
+
+      let barsVisible = true;
+      function toggleBars() {
+        barsVisible = !barsVisible;
+        topBar.classList.toggle('hidden', !barsVisible);
+        bottomBar.classList.toggle('hidden', !barsVisible);
+      }
+
+      // Cambiar tamaño de fuente
+      function changeFontSize(delta) {
+        let newSize = currentFontSize + delta;
+        newSize = Math.min(MAX_FONT, Math.max(MIN_FONT, newSize));
+        if (newSize !== currentFontSize) {
+          currentFontSize = newSize;
+          applyStyles();
+          saveConfig();
+          // Actualizar progreso porque cambia el número de páginas
+          updateProgress();
+        }
+      }
+
+      // Cambiar fuente
+      function setFontFamily(font) {
+        if (font !== currentFontFamily) {
+          currentFontFamily = font;
+          applyStyles();
+          saveConfig();
+          // Actualizar progreso
+          updateProgress();
+        }
+      }
+
+      // Alternar modo
+      function toggleMode() {
+        isDark = !isDark;
+        applyTheme();
+        saveConfig();
+      }
+
+      // Inicializar eventos
+      function init() {
+        // Cargar configuración
+        loadConfig();
+
+        // Aplicar tema y estilos iniciales
+        applyTheme();
+        applyStyles();
+
+        // Cargar libro
+        loadBook();
+
+        // Eventos de botones
+        fontIncrease.addEventListener('click', () => changeFontSize(FONT_STEP));
+        fontDecrease.addEventListener('click', () => changeFontSize(-FONT_STEP));
+
+        fontButtons.forEach(btn => {
+          btn.addEventListener('click', () => {
+            setFontFamily(btn.dataset.font);
+          });
+        });
+
+        bookmarkBtn.addEventListener('click', toggleBookmark);
+
+        modeToggle.addEventListener('click', toggleMode);
+
+        // Guardar configuración al cerrar (por si acaso)
+        window.addEventListener('beforeunload', () => {
+          saveConfig();
+        });
+
+        // Recalcular progreso al cambiar tamaño de ventana (orientación)
         let resizeTimer;
         window.addEventListener('resize', () => {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(() => {
-                updateCounter();
-                saveState();
-            }, 300);
+          clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(() => {
+            updateProgress();
+          }, 300);
         });
 
-        console.log('📖 Lector de texto inicializado.');
+        // Mostrar inicialmente las barras
+        barsVisible = true;
+        topBar.classList.remove('hidden');
+        bottomBar.classList.remove('hidden');
+
+        // Si hay marcador, mostrar indicador en la barra
+        if (bookmarkPosition !== null) {
+          bookmarkBtn.classList.add('active');
+          isBookmarkActive = true;
+        }
+      }
+
+      // Iniciar cuando el DOM esté listo
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+
     })();
-</script>
+  </script>
 </body>
 </html>
