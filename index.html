@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Al Final De Los Caminos</title>
     <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600;7..72,700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3/dist/epub.min.js"></script>
+    <!-- Usamos la versión más reciente de epub.js (0.3.71) -->
+    <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.71/dist/epub.min.js"></script>
     <style>
         /* ===== RESET Y BASE ===== */
         * {
@@ -267,6 +268,7 @@
             border-radius: 8px;
             max-width: 90%;
             line-height: 1.6;
+            margin: 10px 0;
         }
         #loader .hint code {
             background: rgba(0,0,0,0.08);
@@ -274,24 +276,32 @@
             border-radius: 4px;
             font-size: 0.85em;
         }
-        #loader .file-input-wrap {
+        .loader-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
             margin-top: 10px;
         }
-        #loader .file-input-wrap label {
-            display: inline-block;
+        .loader-buttons button {
             background: #c9a96e;
+            border: none;
             color: #fff;
             padding: 10px 20px;
             border-radius: 30px;
             font-size: 0.9rem;
             cursor: pointer;
             transition: background 0.2s;
+            font-family: inherit;
         }
-        #loader .file-input-wrap label:hover {
+        .loader-buttons button:hover {
             background: #b08a4e;
         }
-        #loader .file-input-wrap input[type="file"] {
-            display: none;
+        .loader-buttons .secondary {
+            background: #6a6050;
+        }
+        .loader-buttons .secondary:hover {
+            background: #5a5040;
         }
         #app.dark-mode #loader .hint {
             background: rgba(255,255,255,0.08);
@@ -308,6 +318,7 @@
             #page-counter { font-size: 0.7rem; padding: 2px 10px; }
             .font-group .btn-icon { font-size: 1.0rem; min-width: 30px; min-height: 30px; }
             #bookmark-dot { left: 1%; width: 8px; height: 8px; }
+            .loader-buttons button { padding: 8px 16px; font-size: 0.8rem; }
         }
         @supports (padding-top: env(safe-area-inset-top)) {
             #top-bar { padding-top: calc(14px + env(safe-area-inset-top)); }
@@ -323,10 +334,11 @@
         <div class="spinner" id="loader-spinner"></div>
         <p id="loader-message">Cargando Al Final De Los Caminos...</p>
         <div id="loader-hint" class="hint" style="display:none;"></div>
-        <div class="file-input-wrap">
-            <label for="file-input">📂 O cargar otro EPUB</label>
-            <input type="file" id="file-input" accept=".epub">
+        <div class="loader-buttons">
+            <button id="btn-moby">📖 Probar con Moby Dick</button>
+            <button id="btn-upload" class="secondary">📂 Cargar otro EPUB</button>
         </div>
+        <input type="file" id="file-input" accept=".epub" style="display:none;">
     </div>
 
     <div id="bookmark-dot"></div>
@@ -376,6 +388,8 @@
         const topBar = document.getElementById('top-bar');
         const bottomBar = document.getElementById('bottom-bar');
         const fileInput = document.getElementById('file-input');
+        const btnMoby = document.getElementById('btn-moby');
+        const btnUpload = document.getElementById('btn-upload');
 
         // ============================
         //  ESTADO
@@ -416,7 +430,6 @@
             const params = new URLSearchParams(window.location.search);
             const param = params.get('book');
             if (param) return param;
-            // Por defecto, 'libro.epub' en la misma carpeta
             return 'libro.epub';
         }
 
@@ -459,29 +472,44 @@
             loader.classList.remove('hidden');
             locationsGenerated = false;
             state.bookReady = false;
+            state.totalPages = 1;
+            state.currentPage = 0;
+            updatePageCounter();
 
-            book = ePub(epubUrl, {
-                styles: {
-                    body: {
-                        'font-family': "'Literata', 'Georgia', serif",
-                        'line-height': '1.8',
-                        'letter-spacing': '0.02em',
-                        'padding': '0 !important',
-                        'margin': '0 !important',
-                        'color': '#2c2c2c',
-                        'background': 'transparent !important',
-                    },
-                    p: { 'margin-bottom': '0.6em' }
-                }
-            });
+            console.log('📖 Inicializando lector con:', epubUrl);
 
-            rendition = book.renderTo('viewer', {
-                width: '100%',
-                height: '100%',
-                flow: 'scrolled',
-                spread: 'none',
-                ignoreClass: 'epubjs-ignore',
-            });
+            try {
+                book = ePub(epubUrl, {
+                    styles: {
+                        body: {
+                            'font-family': "'Literata', 'Georgia', serif",
+                            'line-height': '1.8',
+                            'letter-spacing': '0.02em',
+                            'padding': '0 !important',
+                            'margin': '0 !important',
+                            'color': '#2c2c2c',
+                            'background': 'transparent !important',
+                        },
+                        p: { 'margin-bottom': '0.6em' }
+                    }
+                });
+            } catch (err) {
+                showError('Error al crear el lector: ' + err.message, 'Intenta cargar el archivo manualmente.');
+                return;
+            }
+
+            try {
+                rendition = book.renderTo('viewer', {
+                    width: '100%',
+                    height: '100%',
+                    flow: 'scrolled',
+                    spread: 'none',
+                    ignoreClass: 'epubjs-ignore',
+                });
+            } catch (err) {
+                showError('Error al renderizar: ' + err.message, 'Puede que el archivo tenga un formato no soportado.');
+                return;
+            }
 
             rendition.themes.register('custom', {
                 body: {
@@ -539,20 +567,26 @@
                     let errorMsg = err.message || 'Error desconocido';
                     let hint = '';
 
+                    // Mensajes específicos
                     if (errorMsg.includes('manifest')) {
                         errorMsg = 'El archivo EPUB no tiene un manifiesto válido.';
-                        hint = '💡 Prueba a validar el archivo con <a href="https://www.w3.org/publishing/epubcheck/" target="_blank">EPUB Validator</a> o conviértelo de nuevo con Calibre.';
+                        hint = '💡 Prueba a abrir el EPUB en Calibre y volver a guardarlo (Convertir → EPUB).';
                     } else if (errorMsg.includes('spine')) {
                         errorMsg = 'El archivo EPUB tiene problemas en la estructura "spine".';
-                        hint = '💡 Prueba a convertir el archivo de nuevo con Calibre o valídelo con EPUB Validator.';
+                        hint = '💡 Conviértelo de nuevo con Calibre o usa "Cargar otro EPUB".';
                     } else if (errorMsg.includes('Failed to fetch')) {
                         errorMsg = 'No se pudo descargar el archivo.';
                         hint = `💡 Asegúrate de que el archivo se llame <code>libro.epub</code> y esté en la misma carpeta.<br>O usa el botón "Cargar otro EPUB" para seleccionarlo manualmente.`;
                     } else if (errorMsg.includes('Error: EPUB parsing')) {
-                        errorMsg = 'Error al parsear el EPUB. El archivo puede estar corrupto.';
-                        hint = '💡 Intenta abrirlo con Calibre y volver a guardarlo como EPUB, o usa "Cargar otro EPUB" para probar con otro archivo.';
+                        errorMsg = 'Error al parsear el EPUB.';
+                        hint = '💡 Prueba a abrirlo con Calibre y convertirlo a EPUB (versión 2).';
                     } else {
-                        hint = '💡 Puedes intentar cargar otro archivo usando el botón "Cargar otro EPUB" que aparece abajo.';
+                        hint = '💡 Puedes probar con "Moby Dick" para ver si el lector funciona.';
+                    }
+
+                    // Añadir el stack trace al hint si es necesario
+                    if (err.stack) {
+                        hint += `<br><br><details><summary>🧾 Detalle técnico</summary><pre style="font-size:0.7rem;text-align:left;background:rgba(0,0,0,0.05);padding:10px;border-radius:4px;margin-top:6px;overflow:auto;max-width:100%;">${err.stack}</pre></details>`;
                     }
 
                     showError(`Error al procesar el EPUB: ${errorMsg}`, hint);
@@ -560,7 +594,7 @@
         }
 
         // ============================
-        //  FUNCIONES UI (sin cambios)
+        //  FUNCIONES UI
         // ============================
         function updatePageCounter() {
             const current = Math.min(state.currentPage, state.totalPages);
@@ -634,16 +668,23 @@
         }
 
         // ============================
-        //  EVENTOS DE CARGA MANUAL
+        //  EVENTOS DE BOTONES
         // ============================
+        btnMoby.addEventListener('click', function() {
+            console.log('📖 Cargando Moby Dick desde CDN...');
+            initReader('https://s3.amazonaws.com/epubjs/books/moby-dick.epub');
+        });
+
+        btnUpload.addEventListener('click', function() {
+            fileInput.click();
+        });
+
         fileInput.addEventListener('change', function(e) {
             const file = this.files[0];
             if (!file) return;
             const url = URL.createObjectURL(file);
-            bookUrl = file.name;
             console.log('📂 Cargando archivo seleccionado:', file.name);
             initReader(url);
-            // Limpiar input para poder seleccionar el mismo archivo de nuevo
             this.value = '';
         });
 
