@@ -14,7 +14,6 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* 🔥 SOLUCIÓN 1: Desactivar el ajuste automático de texto en iOS */
         html {
             -webkit-text-size-adjust: 100%;
             text-size-adjust: 100%;
@@ -69,7 +68,7 @@
             overflow: hidden;
         }
 
-        /* 🔥 SOLUCIÓN 2: Engañar al Modo Lectura de Safari */
+        /* UI envuelta en <aside> para evitar el modo lectura */
         #app-ui {
             display: contents;
         }
@@ -123,10 +122,12 @@
             word-break: break-word;
             font-family: 'Georgia', serif;
         }
+
+        /* 🔥 SOLUCIÓN: los párrafos heredan el tamaño de #reader */
         #reader p {
             margin: 0 0 1.4em 0;
             text-align: justify;
-            font-size: 1rem;
+            font-size: inherit; /* ← Aquí estaba el bloqueo */
             transition: font-size 0.1s ease;
         }
 
@@ -441,7 +442,6 @@
 </head>
 <body>
     <div id="app">
-        <!-- 🔥 UI envuelta en <aside> para evitar el modo lectura -->
         <aside id="app-ui">
             <header id="top-bar">
                 <button class="menu-btn" id="menuToggle" aria-label="Menú">☰</button>
@@ -501,9 +501,8 @@
         (function() {
             'use strict';
 
-            console.log('📖 Lector Ágil v2.5 - Tamaño de fuente corregido (paso 0.15)');
+            console.log('📖 Lector Ágil v2.6 - CSS heredado corregido');
 
-            // ---------- MAPEO DE FUENTES ----------
             const FONT_MAP = {
                 georgia: 'Georgia, serif',
                 times: '"Times New Roman", serif',
@@ -512,7 +511,6 @@
                 palatino: '"Palatino Linotype", "Book Antiqua", serif'
             };
 
-            // ---------- DOM REFS ----------
             const reader = document.getElementById('reader');
             const topBar = document.getElementById('top-bar');
             const bottomBar = document.getElementById('bottom-bar');
@@ -532,7 +530,6 @@
             const goToBookmarkBtn = document.getElementById('goToBookmark');
             const toast = document.getElementById('toast');
 
-            // ---------- ESTADO ----------
             const state = {
                 fontSize: 1.0,
                 fontKey: 'georgia',
@@ -543,13 +540,11 @@
                 barsVisible: true,
             };
 
-            // Aumentamos el paso a 0.15 para que se note más
             const MIN_FONT = 0.6;
             const MAX_FONT = 3.0;
             const FONT_STEP = 0.15;
             const STORAGE_KEY = 'lector_agile_config';
 
-            // ---------- PERSISTENCIA ----------
             function loadState() {
                 try {
                     const raw = localStorage.getItem(STORAGE_KEY);
@@ -576,36 +571,24 @@
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
             }
 
-            // ---------- APLICAR TAMAÑO DE FUENTE (CORREGIDO) ----------
             function applyFontSize(size) {
-                // 1. Redondear a 1 decimal para evitar errores de precisión flotante
                 let newSize = Math.round(Math.min(MAX_FONT, Math.max(MIN_FONT, size)) * 10) / 10;
-
-                // 2. Actualizar estado
                 state.fontSize = newSize;
 
-                // 3. Aplicar directamente al DOM
+                // Aplicar al contenedor; los párrafos heredan gracias a font-size: inherit
                 reader.style.fontSize = state.fontSize + 'rem';
 
-                // 4. Actualizar visualización
                 fontSizeDisplay.textContent = state.fontSize.toFixed(1);
-                // Efecto de "pop" en el número
                 fontSizeDisplay.classList.remove('pop');
-                void fontSizeDisplay.offsetWidth; // forzar reflow
+                void fontSizeDisplay.offsetWidth;
                 fontSizeDisplay.classList.add('pop');
 
-                // 5. Guardar en localStorage
                 saveState();
-
-                // 6. Recalcular progreso (puede cambiar el alto de línea)
                 requestAnimationFrame(() => updateProgress());
-
-                // 7. Feedback
-                console.log('🔠 Tamaño fuente aplicado:', state.fontSize);
+                console.log('🔠 Tamaño:', state.fontSize);
                 showToast(`Tamaño: ${state.fontSize.toFixed(1)}`);
             }
 
-            // ---------- APLICAR FUENTE Y TEMA ----------
             function applyFontFamily(key) {
                 if (!FONT_MAP[key]) return;
                 state.fontKey = key;
@@ -627,7 +610,6 @@
                 saveState();
             }
 
-            // ---------- PROGRESO Y PÁGINAS ----------
             function updateProgress() {
                 const scrollTop = reader.scrollTop;
                 const scrollHeight = reader.scrollHeight;
@@ -678,7 +660,6 @@
                 updateProgress();
             }
 
-            // ---------- MARCADOR ----------
             function saveBookmark() {
                 const scrollTop = reader.scrollTop;
                 const scrollHeight = reader.scrollHeight;
@@ -704,11 +685,10 @@
                 showToast('📍 Ir al marcador');
             }
 
-            // ---------- CARGAR LIBRO ----------
             async function loadBook() {
                 try {
                     const url = 'libro.txt?t=' + Date.now();
-                    console.log('📂 Cargando libro desde:', url);
+                    console.log('📂 Cargando:', url);
                     const resp = await fetch(url);
                     if (!resp.ok) throw new Error('Error ' + resp.status + ': ' + resp.statusText);
                     const text = await resp.text();
@@ -720,7 +700,6 @@
                     const html = paragraphs.map(p => `<p>${escapeHtml(p.trim())}</p>`).join('');
                     reader.innerHTML = html;
 
-                    // Aplicar estilos guardados
                     applyFontSize(state.fontSize);
                     applyFontFamily(state.fontKey);
                     applyTheme(state.theme);
@@ -731,11 +710,11 @@
                     });
 
                     saveState();
-                    console.log('✅ Libro cargado correctamente');
+                    console.log('✅ Libro cargado');
                 } catch (err) {
                     reader.innerHTML =
-                        `<p style="color: #b44; padding: 2rem; text-align: center;"><strong>Error al cargar el libro:</strong><br>${err.message}<br><br>Asegúrate de que el archivo <code>libro.txt</code> esté en la misma carpeta.</p>`;
-                    console.error('❌ Error al cargar el libro:', err);
+                        `<p style="color: #b44; padding: 2rem; text-align: center;"><strong>Error:</strong> ${err.message}<br><br>Asegúrate de que <code>libro.txt</code> esté en la misma carpeta.</p>`;
+                    console.error('❌ Error:', err);
                 }
             }
 
@@ -745,7 +724,6 @@
                 return div.innerHTML;
             }
 
-            // ---------- MENÚ ----------
             function toggleMenu(open) {
                 const newState = (open !== undefined) ? open : !state.menuOpen;
                 state.menuOpen = newState;
@@ -754,7 +732,6 @@
                 document.body.style.overflow = newState ? 'hidden' : '';
             }
 
-            // ---------- TOAST ----------
             let toastTimer = null;
 
             function showToast(msg, duration = 2000) {
@@ -770,14 +747,12 @@
                 }, duration);
             }
 
-            // ---------- OCULTAR BARRAS ----------
             function toggleBars() {
                 state.barsVisible = !state.barsVisible;
                 topBar.classList.toggle('hidden', !state.barsVisible);
                 bottomBar.classList.toggle('hidden', !state.barsVisible);
             }
 
-            // ---------- EVENTOS ----------
             reader.addEventListener('scroll', handleScroll, { passive: true });
             reader.addEventListener('click', toggleBars);
 
@@ -788,17 +763,13 @@
             menuOverlay.addEventListener('click', () => toggleMenu(false));
             closeMenu.addEventListener('click', () => toggleMenu(false));
 
-            // Botones de tamaño - con redondeo explícito
             fontDec.addEventListener('click', function(e) {
                 e.stopPropagation();
-                const newSize = Math.round((state.fontSize - FONT_STEP) * 10) / 10;
-                applyFontSize(newSize);
+                applyFontSize(state.fontSize - FONT_STEP);
             });
-
             fontInc.addEventListener('click', function(e) {
                 e.stopPropagation();
-                const newSize = Math.round((state.fontSize + FONT_STEP) * 10) / 10;
-                applyFontSize(newSize);
+                applyFontSize(state.fontSize + FONT_STEP);
             });
 
             fontFamilyGroup.addEventListener('click', (e) => {
@@ -825,7 +796,6 @@
 
             window.addEventListener('beforeunload', () => saveState());
 
-            // ---------- INICIO ----------
             function init() {
                 loadState();
                 topBar.classList.remove('hidden');
